@@ -100,20 +100,21 @@ class TestPlanetaryNomenclature(unittest.TestCase):
 
         self.assertFalse(result)
 
+    @patch('adsplanetnamepipe.tasks.app.get_knowledge_base_keywords')
     @patch('adsplanetnamepipe.tasks.IdentifyPlanetaryEntities')
-    def test_task_process_planetary_nomenclature_identify_failed(self, mock_identify_planetary_entities):
+    def test_task_process_planetary_nomenclature_identify_failed(self, mock_identify_planetary_entities, mock_get_keywords):
         """ calling task queue when in identifying stage and fails """
 
-        mock_identify_instance = MagicMock()
-        mock_identify_instance.identify.return_value = []
-        mock_identify_planetary_entities.return_value = mock_identify_instance
+        mock_get_keywords.return_value = False
+        mock_identify_instance = mock_identify_planetary_entities.return_value
+        mock_identify_instance.identify.return_value = None
 
         the_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.identify, 'args': self.args}
 
         result = task_process_planetary_nomenclature(the_task)
 
+        self.assertEqual(mock_get_keywords.call_count, 2)
         self.assertFalse(result)
-
 
 if __name__ == '__main__':
     unittest.main()
