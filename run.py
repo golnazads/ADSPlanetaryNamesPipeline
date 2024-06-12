@@ -58,14 +58,14 @@ def get_date(days):
 # python run.py -t Mars -n Amenthes -a collect
 # python run.py -t Mars -n Amenthes -a remove_all_but_last
 # python run.py -t Mars -n Amenthes -a remove_the_most_recent
-# python run.py -t Mars -n Amenthes -a add_keyword_to_knowledge_graph
+# python run.py -t Mars -n Amenthes -a add_keyword_to_knowledge_graph -k basin -t Moon -f Apollo
 # python run.py -t Mars -n Amenthes -a remove_keyword_from_knowledge_graph
 # python run.py -t Mars -n Amenthes -a retrieve_identified_entities -c 0.75
 # TODO: add a command to run all the feature types for all celestial bodies for collect step
 # TODO: add a command to run all the feature names since d days ago
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Identify Planetary Nomenclature')
-    parser.add_argument('-a', '--action', help='one of the followings: collect, predict, end_to_end (collect followed by predict).')
+    parser.add_argument('-a', '--action', help='one of the followings: collect, identify, end_to_end (collect followed by identify).')
     parser.add_argument('-t', '--target', help='target (ie, Moon, Mars, etc) is required. Has to be capitalized.')
     parser.add_argument('-f', '--feature_type', help='feature type (ie, Crater or Albedo Feature), is one of the options, either feature type or feature name are required, but no both. Has to be capitalized and in singular form.')
     parser.add_argument('-n', '--feature_name', help='feature name (ie Apollo, Atlas), is one of the options, either feature type or feature name are required, but no both. Has to be capitalized.')
@@ -114,6 +114,8 @@ if __name__ == '__main__':
                                        PLANETARYNAMES_PIPELINE_ACTION.end_to_end]:
                         the_task = {'action_type': action_type, 'args': entity_args}
                         tasks.task_process_planetary_nomenclature.delay(the_task)
+                        # print('---by passing queue for now')
+                        # tasks.task_process_planetary_nomenclature(the_task)
                     elif action_type == PLANETARYNAMES_PIPELINE_ACTION.remove_the_most_recent:
                         KBH_rows_deleted, KB_rows_deleted = app.remove_most_recent_knowledge_base_records(feature_name_entity=feature_name,
                                                                                                           target_entity=current_target)
