@@ -76,10 +76,10 @@ if __name__ == '__main__':
     if args.action:
         action_type = map_input_param_to_action_type(args.action)
         if not action_type:
-            print(f"Invalid action arg `{args.action}`! Terminating!")
+            logger.info(f"Invalid action arg `{args.action}`! Terminating!")
             sys.exit(1)
     else:
-        print('The action arg (-a) is needed for processing! Terminating!')
+        logger.info('The action arg (-a) is needed for processing! Terminating!')
         sys.exit(1)
 
     # the only action command with no required parameter
@@ -88,9 +88,9 @@ if __name__ == '__main__':
         current_feature_names = current_feature_names if len(current_feature_names) > 0 else ['']
         for feature_name in current_feature_names:
             results = app.get_named_entity_bibcodes(feature_name, current_feature_type, current_target, args.confidence_score, get_date(args.days))
-            # TODO: find out how the user wants this
-            for r in results:
-                print(r)
+            # TODO: find out how the user wants this results outputted
+            if results:
+                logger.info(f"Total entities fetched: {len(results)}")
     else:
         if args.target:
             current_target, current_feature_type, current_feature_names = verify_args(args)
@@ -114,34 +114,33 @@ if __name__ == '__main__':
                                        PLANETARYNAMES_PIPELINE_ACTION.end_to_end]:
                         the_task = {'action_type': action_type, 'args': entity_args}
                         tasks.task_process_planetary_nomenclature.delay(the_task)
-                        # print('---by passing queue for now')
-                        # tasks.task_process_planetary_nomenclature(the_task)
+
                     elif action_type == PLANETARYNAMES_PIPELINE_ACTION.remove_the_most_recent:
                         KBH_rows_deleted, KB_rows_deleted = app.remove_most_recent_knowledge_base_records(feature_name_entity=feature_name,
                                                                                                           target_entity=current_target)
-                        print(f"Removed the most recent records of knowledge graph for feature name `{feature_name}` and target `{current_target}`.\n"
-                              f"Deleted {KBH_rows_deleted} rows from knowledge_base_history and {KB_rows_deleted} rows from knowledge_base.")
+                        logger.info(f"Removed the most recent records of knowledge graph for feature name `{feature_name}` and target `{current_target}`.\n"
+                                    f"Deleted {KBH_rows_deleted} rows from knowledge_base_history and {KB_rows_deleted} rows from knowledge_base.")
                     elif action_type == PLANETARYNAMES_PIPELINE_ACTION.remove_all_but_last:
                         KBH_rows_deleted, KB_rows_deleted = app.remove_all_but_most_recent_knowledge_base_records(feature_name_entity=feature_name,
                                                                                                                   target_entity=current_target)
-                        print(f"Removed all but the most recent records of knowledge graph for feature name `{feature_name}` and target `{current_target}`.\n"
-                              f"Deleted {KBH_rows_deleted} rows from knowledge_base_history and {KB_rows_deleted} rows from knowledge_base.\n")
+                        logger.info(f"Removed all but the most recent records of knowledge graph for feature name `{feature_name}` and target `{current_target}`.\n"
+                                    f"Deleted {KBH_rows_deleted} rows from knowledge_base_history and {KB_rows_deleted} rows from knowledge_base.\n")
                     elif action_type == PLANETARYNAMES_PIPELINE_ACTION.add_keyword_to_knowledge_graph:
                         if args.keyword:
                             rows_updated = app.append_to_knowledge_base_keywords(feature_name_entity=feature_name,target_entity=current_target, keyword=args.keyword)
-                            print(f"{rows_updated} rows updated by adding the keyword.")
+                            logger.info(f"{rows_updated} rows updated by adding the keyword.")
                         else:
-                            print('Keyword (-k) is a required parameter for this action! Terminating!')
+                            logger.info('Keyword (-k) is a required parameter for this action! Terminating!')
                     elif action_type == PLANETARYNAMES_PIPELINE_ACTION.remove_keyword_from_knowledge_graph:
                         if args.keyword:
                             rows_updated = app.remove_from_knowledge_base_keywords(feature_name_entity=feature_name,target_entity=current_target, keyword=args.keyword)
-                            print(f"{rows_updated} rows updated by removing the keyword.")
+                            logger.info(f"{rows_updated} rows updated by removing the keyword.")
                         else:
-                            print('Keyword (-k) is a required parameter for this action! Terminating!')
+                            logger.info('Keyword (-k) is a required parameter for this action! Terminating!')
             else:
-                print('Either valid feature type (-f) or valid feature name (-n) is needed for processing! Terminating!')
+                logger.info('Either valid feature type (-f) or valid feature name (-n) is needed for processing! Terminating!')
                 sys.exit(1)
         else:
-            print('The target (-t) is needed for processing! Terminating!')
+            logger.info('The target (-t) is needed for processing! Terminating!')
             sys.exit(1)
     sys.exit(0)
