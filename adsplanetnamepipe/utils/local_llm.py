@@ -1,8 +1,10 @@
 import requests
 
-from adsputils import setup_logging
+from adsputils import setup_logging, load_config
 
 logger = setup_logging('utils')
+config = {}
+config.update(load_config())
 
 from adsplanetnamepipe.utils.common import EntityArgs
 
@@ -25,8 +27,6 @@ class LocalLLM():
         :return:
         """
         if abstract:
-            url = 'https://playground.adsabs.harvard.edu/brain/v1/chat'
-            headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer %s'%'edge!'}
             title = ' '.join(title)
             content = f'Consider the following scientific article:\n\n' \
                       f'Title: {title}\n\n' \
@@ -36,7 +36,10 @@ class LocalLLM():
                       f'that the term "{self.args.feature_name}" refers to a "{self.args.feature_type}" on the {self.args.target}?\n\n '
             json_data = {'system': 'This is a system prompt, please behave and help the user',
                          'conversation': [ { 'role': 'user', 'content': content } ] }
-            response = requests.post(url=url, headers=headers, json=json_data)
+            response = requests.post(url=config['PLANETARYNAMES_PIPELINE_BRAIN_URL'],
+                                     headers={'Content-Type': 'application/json',
+                                              'Authorization': 'Bearer %s' % config['PLANETARYNAMES_PIPELINE_BRAIN_API_TOKEN']},
+                                     json=json_data)
             if response.status_code == 200:
                 answer = response.json().get('text', '').strip()
                 try:

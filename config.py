@@ -9,6 +9,10 @@ PLANETARYNAMES_PIPELINE_ADSWS_API_TOKEN = 'this is a secret api token!'
 PLANETARYNAMES_PIPELINE_SOLR_URL = 'https://dev.adsabs.harvard.edu/v1/search/query'
 
 
+PLANETARYNAMES_PIPELINE_BRAIN_API_TOKEN = 'this is a secret api token for the Brain!'
+PLANETARYNAMES_PIPELINE_BRAIN_URL = 'https://playground.adsabs.harvard.edu/brain/v1/chat'
+
+
 # db config
 SQLALCHEMY_URL = 'postgresql+psycopg2://postgres:postgres@localhost:5432/postgres'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
