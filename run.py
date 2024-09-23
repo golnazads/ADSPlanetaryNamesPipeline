@@ -1,5 +1,6 @@
 import sys
 import os
+from typing import List, Tuple
 from datetime import datetime, timedelta
 
 from adsputils import setup_logging, load_config
@@ -16,24 +17,26 @@ config = load_config(proj_home=proj_home)
 app = tasks.app
 logger = setup_logging('run.py')
 
-def map_input_param_to_action_type(input_param):
-    """
 
-    :param input_param:
-    :return:
+def map_input_param_to_action_type(input_param: str) -> PLANETARYNAMES_PIPELINE_ACTION:
+    """
+    maps an input parameter to a corresponding action type from the PLANETARYNAMES_PIPELINE_ACTION enum
+
+    :param input_param: input parameter to be mapped to an action type
+    :return: PLANETARYNAMES_PIPELINE_ACTION, corresponding PLANETARYNAMES_PIPELINE_ACTION enum value
     """
     try:
-        action = PLANETARYNAMES_PIPELINE_ACTION[input_param]
-        return action
+        return PLANETARYNAMES_PIPELINE_ACTION[input_param]
     except (KeyError, ValueError):
-        logger.error(f"Invalid action type: {input_param}")
-        return None
+        return PLANETARYNAMES_PIPELINE_ACTION.invalid
 
-def verify_args(args):
+
+def verify_args(args: argparse) -> Tuple[str, str, List[str]]:
     """
+    verifies and processes the command-line arguments, returning the target, feature type, and feature names
 
-    :param args:
-    :return:
+    :param args: parsed command-line arguments object
+    :return: Tuple[str, str, List[str]], A tuple containing (target, feature_type, feature_names)
     """
     if args.target and args.feature_type:
         return args.target, args.feature_type, app.get_feature_name_entities(args.target, args.feature_type)
@@ -41,14 +44,17 @@ def verify_args(args):
         return args.target, app.get_feature_type_entity(args.target, args.feature_name), [args.feature_name]
     return args.target, args.feature_type, [args.feature_name]
 
-def get_date(days):
-    """
 
-    :param days:
-    :return:
+def get_date(days: int) -> datetime:
     """
-    if not days:
-        return None
+    Calculates a target date based on the number of days provided.
+    If days is 0, it returns the earliest possible datetime (datetime.min).
+
+    :param days: int, The number of days to subtract from the current date. Can be 0 or a positive integer.
+    :return: datetime, A datetime object representing either the target date or the earliest possible datetime if days is 0.
+    """
+    if days == 0:
+        return datetime.min
 
     target_date = datetime.now().date() - timedelta(days=days)
     target_datetime = datetime.combine(target_date, datetime.now().time())
@@ -63,6 +69,9 @@ def get_date(days):
 # python run.py -t Mars -n Amenthes -a retrieve_identified_entities -c 0.75
 # TODO: add a command to run all the feature types for all celestial bodies for collect step
 # TODO: add a command to run all the feature names since d days ago
+
+# Main entry point of the script.
+# Sets up argument parsing, processes the arguments, and executes the appropriate action based on the provided command-line arguments.
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Identify Planetary Nomenclature')
     parser.add_argument('-a', '--action', help='one of the followings: collect, identify, end_to_end (collect followed by identify).')
@@ -75,7 +84,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.action:
         action_type = map_input_param_to_action_type(args.action)
-        if not action_type:
+        if action_type == PLANETARYNAMES_PIPELINE_ACTION.invalid:
             logger.info(f"Invalid action arg `{args.action}`! Terminating!")
             sys.exit(1)
     else:

@@ -39,10 +39,16 @@ MAX_QUEUE_RETRIES = 3
 # add a keyword manually if the excerpt contains that keyword (add_keyword_to_knowledge_graph)
 # remove a keyword if it exists (remove_keyword_from_knowledge_graph)
 # retrieve all the identified entities (retrieve_identified_entities)
-PLANETARYNAMES_PIPELINE_ACTION = Enum('action', ['collect', 'identify', 'end_to_end',
-                                                 'remove_the_most_recent', 'remove_all_but_last',
-                                                 'add_keyword_to_knowledge_graph', 'remove_keyword_from_knowledge_graph',
-                                                 'retrieve_identified_entities'])
+class PLANETARYNAMES_PIPELINE_ACTION(Enum):
+    collect = 'collect'
+    identify = 'identify'
+    end_to_end = 'end_to_end'
+    remove_the_most_recent = 'remove_the_most_recent'
+    remove_all_but_last = 'remove_all_but_last'
+    add_keyword_to_knowledge_graph = 'add_keyword_to_knowledge_graph'
+    remove_keyword_from_knowledge_graph = 'remove_keyword_from_knowledge_graph'
+    retrieve_identified_entities = 'retrieve_identified_entities'
+    invalid = 'invalid'
 
 PLANETARYNAMES_PIPELINE_FORMAT_SIGNIFICANT_DIGITS = 2
 
