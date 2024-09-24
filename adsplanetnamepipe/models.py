@@ -3,6 +3,7 @@
 import copy
 
 from datetime import datetime, timezone
+from typing import Tuple
 
 from sqlalchemy import Integer, String, Column, ForeignKey, DateTime, Float, ForeignKeyConstraint
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -243,6 +244,16 @@ class NamedEntityLabel(Base):
             'label': self.label,
             'value': 1 if self.label == 'planetary' else 0
         }
+
+    @staticmethod
+    def sort_key(item: 'NamedEntityLabel') -> Tuple[int, str]:
+        """
+        key function for sorting NamedEntityLabel instances
+
+        :param item: a NamedEntityLabel instance
+        :return: a tuple used for sorting, ensuring 'planetary' comes first
+        """
+        return (0 if item.label == 'planetary' else 1, item.label)
 
 
 class KnowledgeBaseHistory(Base):

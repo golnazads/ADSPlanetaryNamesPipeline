@@ -4,6 +4,7 @@ in order to initialize the database and get a working configuration.
 """
 
 from typing import List, Tuple
+from datetime import datetime
 
 from adsputils import ADSCelery
 
@@ -17,23 +18,29 @@ from sqlalchemy.sql.expression import func
 
 
 class ADSPlanetaryNamesPipelineCelery(ADSCelery):
+    """
+    main application object for the ADS Planetary Names Pipeline
 
-    def __init__(self, app_name, *args, **kwargs):
+    this class extends ADSCelery and provides methods for insert into/remove from/query the database tables
+    """
+
+    def __init__(self, app_name: str, *args, **kwargs):
         """
+        initialize the ADSPlanetaryNamesPipelineCelery object
 
-        :param app_name:
-        :param args:
-        :param kwargs:
+        :param app_name: the name of the application
+        :param args: additional positional arguments
+        :param kwargs: additional keyword arguments
         """
         ADSCelery.__init__(self, app_name, *args, **kwargs)
 
-    def get_feature_name_entities(self, target_entity, feature_type_entity):
+    def get_feature_name_entities(self, target_entity: str, feature_type_entity: str) -> List[str]:
         """
-        return all the feature names for target and feature type
+        return all the feature name entities for a given target and feature type
 
-        :param target_entity:
-        :param feature_type_entity:
-        :return:
+        :param target_entity: the target entity to filter by
+        :param feature_type_entity: the feature type entity to filter by
+        :return: a list of feature name entities
         """
         with self.session_scope() as session:
             rows = session.query(FeatureName).filter(and_(FeatureName.target_entity ==  target_entity,
@@ -49,13 +56,13 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 self.logger.error(f"No feature name entities are found for {target_entity}/{feature_type_entity}.")
         return []
 
-    def get_feature_type_entity(self, target_entity, feature_name_entity):
+    def get_feature_type_entity(self, target_entity: str, feature_name_entity: str) -> str:
         """
         return a feature type given target and feature name
 
-        :param feature_name_entity:
-        :param target_entity:
-        :return:
+        :param target_entity: the target entity to filter by
+        :param feature_name_entity: the feature name entity to filter by
+        :return: the feature type entity as a string
         """
         with self.session_scope() as session:
             rows = session.query(FeatureName).filter(and_(FeatureName.target_entity ==  target_entity,
@@ -66,12 +73,12 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 self.logger.error(f"No feature type entity is found for {target_entity}/{feature_name_entity}.")
         return ''
 
-    def get_plural_feature_type_entity(self, feature_type_entity):
+    def get_plural_feature_type_entity(self, feature_type_entity: str) -> str:
         """
-        return the plural form of feature type
+        return the plural form of a feature type
 
-        :param feature_type_entity:
-        :return:
+        :param feature_type_entity: the feature type entity to get the plural form for
+        :return: the plural form of the feature type entity as a string
         """
         with self.session_scope() as session:
             row = session.query(FeatureType).filter(FeatureType.entity == feature_type_entity).first()
@@ -79,13 +86,12 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 return row.plural_entity
         return ''
 
-    def get_context_ambiguous_feature_name(self, feature_name_entity):
+    def get_context_ambiguous_feature_name(self, feature_name_entity: str) -> List[str]:
         """
-        return the list of context associated with a feature name
-        if none return []
+        return the list of contexts associated with an ambiguous feature name
 
-        :param feature_name_entity:
-        :return:
+        :param feature_name_entity: the feature name entity to get contexts for
+        :return: a list of contexts associated with the feature name, if none is found return []
         """
         with self.session_scope() as session:
             rows = session.query(AmbiguousFeatureName).filter(AmbiguousFeatureName.entity == feature_name_entity).all()
@@ -98,13 +104,12 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 self.logger.info(f"No context is found for entity {feature_name_entity}.")
         return []
 
-    def get_multi_token_containing_feature_name(self, feature_name_entity):
+    def get_multi_token_containing_feature_name(self, feature_name_entity: str) -> List[str]:
         """
-        return the list of multi token that contains a feature name
-        if none return []
+        return the list of multi-token entities that contain a given feature name
 
-        :param feature_name_entity:
-        :return:
+        :param feature_name_entity: the feature name entity to search for
+        :return: a list of multi-token entities containing the feature name, if none is found return []
         """
         with self.session_scope() as session:
             rows = session.query(MultiTokenFeatureName).filter(MultiTokenFeatureName.entity ==  feature_name_entity).all()
@@ -117,28 +122,27 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 self.logger.info(f"No multi token entity is found for entity {feature_name_entity}.")
         return []
 
-    def get_named_entity_label(self):
+    def get_named_entity_label(self) -> List[dict]:
         """
-        return list of dict with named entity label and value corresponding to confidence [0, 1]
+        return a list of dictionaries with named entity labels and their corresponding confidence values
 
-        :return:
+        :return: a list of dictionaries containing named entity labels and confidence values
         """
         with self.session_scope() as session:
             rows = session.query(NamedEntityLabel).all()
             if len(rows) > 1:
-                named_entity_label = []
-                for row in rows:
-                    named_entity_label.append(row.toJSON())
+                sorted_rows = sorted(rows, key=NamedEntityLabel.sort_key)
+                named_entity_label = [row.toJSON() for row in sorted_rows]
                 return named_entity_label
             else:
                 self.logger.error("Unable to fetch the named entity label records.")
         return []
 
-    def get_target_entities(self):
+    def get_target_entities(self) -> List[str]:
         """
         return all the target entities
 
-        :return:
+        :return: a list of all target entities
         """
         with self.session_scope() as session:
             rows = session.query(Target).all()
@@ -151,11 +155,12 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 self.logger.error("Unable to fetch the target records.")
         return []
 
-    def insert_knowledge_base_records(self, knowledge_base_list: List[Tuple[KnowledgeBaseHistory, List[KnowledgeBase]]]):
+    def insert_knowledge_base_records(self, knowledge_base_list: List[Tuple[KnowledgeBaseHistory, List[KnowledgeBase]]]) -> bool:
         """
+        insert knowledge base records into the database
 
-        :param knowledge_base_list: List of tuples containing KnowledgeBaseHistory and associated KnowledgeBase records
-        :return: True if the insertion is successful, False otherwise
+        :param knowledge_base_list: a list of tuples containing KnowledgeBaseHistory and associated KnowledgeBase records
+        :return: true if the insertion is successful, false otherwise
         """
         with self.session_scope() as session:
             try:
@@ -175,14 +180,16 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 self.logger.error(f"Error occurred while inserting `KnowledgeBaseHistory` and `KnowledgeBase` records: {str(e)}")
                 return False
 
-    def get_knowledge_base_keywords(self, feature_name_entity, feature_type_entity, target_entity, named_entity_label):
+    def get_knowledge_base_keywords(self, feature_name_entity: str, feature_type_entity: str, target_entity: str,
+                                          named_entity_label: str) -> List[str]:
         """
+        retrieve knowledge base keywords for given parameters
 
-        :param feature_name_entity:
-        :param feature_type_entity:
-        :param target_entity:
-        :param named_entity_label:
-        :return:
+        :param feature_name_entity: the feature name entity to filter by
+        :param feature_type_entity: the feature type entity to filter by
+        :param target_entity: the target entity to filter by
+        :param named_entity_label: the named entity label to filter by
+        :return: a list of keywords from the knowledge base
         """
         result = []
         with self.session_scope() as session:
@@ -205,16 +212,14 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
 
         return result
 
-    def append_to_knowledge_base_keywords(self, feature_name_entity, target_entity, keyword):
+    def append_to_knowledge_base_keywords(self, feature_name_entity: str, target_entity: str, keyword: str) -> int:
         """
-        search for the keyword in the excerpts of specific feature name/target
-        add it to the keywords column, if not already there
-        note that this is only implemented for the `planetary` records
+        append a keyword to the knowledge base keywords for a specific feature name and target
 
-        :param feature_name_entity:
-        :param target_entity:
-        :param keyword:
-        :return: number of rows updated
+        :param feature_name_entity: the feature name entity to update
+        :param target_entity: the target entity to update
+        :param keyword: the keyword to append
+        :return: the number of rows updated
         """
         with self.session_scope() as session:
             try:
@@ -242,15 +247,14 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 self.logger.error(f"Error occurred while appending keyword `{keyword.lower()}` for feature name `{feature_name_entity}` and target `{target_entity}` for the `KnowledgeBase` records: {str(e)}")
                 return -1
 
-    def remove_from_knowledge_base_keywords(self, feature_name_entity, target_entity, keyword):
+    def remove_from_knowledge_base_keywords(self, feature_name_entity: str, target_entity: str, keyword: str) -> int:
         """
-        remove the keyword from the keywords for a specific feature name/target
-        note that this is only implemented for the `planetary` records
+        remove a keyword from the knowledge base keywords for a specific feature name and target
 
-        :param feature_name_entity:
-        :param target_entity:
-        :param keyword:
-        :return: number of rows updated
+        :param feature_name_entity: the feature name entity to update
+        :param target_entity: the target entity to update
+        :param keyword: the keyword to remove
+        :return: the number of rows updated
         """
         with self.session_scope() as session:
             try:
@@ -277,12 +281,13 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 self.logger.error(f"Error occurred while removing keyword `{keyword.lower()}` for feature name `{feature_name_entity}` and target `{target_entity}` from the `KnowledgeBase` records: {str(e)}")
                 return -1
 
-    def get_most_recent_knowledge_base_history_records(self, feature_name_entity, target_entity):
+    def get_most_recent_knowledge_base_history_records(self, feature_name_entity: str, target_entity: str) -> Tuple[List[int], List[int]]:
         """
+        retrieve the most recent knowledge base history record IDs for a specific feature name and target
 
-        :param feature_name_entity:
-        :param target_entity:
-        :return:
+        :param feature_name_entity: the feature name entity to filter by
+        :param target_entity: the target entity to filter by
+        :return: a tuple containing two lists of IDs: (planetary_ids, non_planetary_ids)
         """
         with self.session_scope() as session:
             rows = session.query(KnowledgeBaseHistory) \
@@ -301,11 +306,12 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
             knowledge_base_history_id_non_planetary = [row.id for row in rows]
             return knowledge_base_history_id_planetary, knowledge_base_history_id_non_planetary
 
-    def remove_knowledge_base_records(self, ids_to_remove):
+    def remove_knowledge_base_records(self, ids_to_remove: List[int]) -> Tuple[int, int]:
         """
+        remove knowledge base records with the given IDs
 
-        :param ids_to_remove:
-        :return:
+        :param ids_to_remove: a list of IDs to remove from the knowledge base
+        :return: a tuple containing the number of rows deleted from (KnowledgeBase, KnowledgeBaseHistory)
         """
         with self.session_scope() as session:
             try:
@@ -322,14 +328,13 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 session.rollback()
                 return -1, -1
 
-    def remove_most_recent_knowledge_base_records(self, feature_name_entity, target_entity):
+    def remove_most_recent_knowledge_base_records(self, feature_name_entity: str, target_entity: str) -> Tuple[int, int]:
         """
-        remove the last record from the knowledge_base_history table for a specific feature name/target
-        also remove the corresponding records from the knowledge_base table
+        remove the most recent knowledge base records (knowledge_base_history and knowledge_base) for a specific feature name and target
 
-        :param feature_name_entity:
-        :param target_entity:
-        :return: number of rows deleted from knowledge_base_history and knowledge_base tables
+        :param feature_name_entity: the feature name entity to filter by
+        :param target_entity: the target entity to filter by
+        :return: a tuple containing the number of rows deleted from (KnowledgeBaseHistory, KnowledgeBase)
         """
         planetary, non_planetary = self.get_most_recent_knowledge_base_history_records(feature_name_entity, target_entity)
         ids_to_remove = ([planetary[-1]] if planetary else []) + ([non_planetary[-1]] if non_planetary else [])
@@ -339,14 +344,13 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                              f"Deleted {knowledge_base_history_rows_deleted} rows from knowledge_base and {knowledge_base_rows_deleted} rows from knowledge_base_history.")
         return knowledge_base_history_rows_deleted, knowledge_base_rows_deleted
 
-    def remove_all_but_most_recent_knowledge_base_records(self, feature_name_entity, target_entity):
+    def remove_all_but_most_recent_knowledge_base_records(self, feature_name_entity: str, target_entity: str) -> Tuple[int, int]:
         """
-        remove all but the last record from the knowledge_base_history table for a specific feature name/target
-        also remove the corresponding records from the knowledge_base table
+        remove all but the most recent knowledge base records (knowledge_base_history and knowledge_base) for a specific feature name and target
 
-        :param feature_name_entity:
-        :param target_entity:
-        :return: number of rows deleted from knowledge_base_history and knowledge_base tables
+        :param feature_name_entity: the feature name entity to filter by
+        :param target_entity: the target entity to filter by
+        :return: a tuple containing the number of rows deleted from (KnowledgeBaseHistory, KnowledgeBase)
         """
         planetary, non_planetary = self.get_most_recent_knowledge_base_history_records(feature_name_entity, target_entity)
         ids_to_remove = planetary[:-1] + non_planetary[:-1]
@@ -356,11 +360,12 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                              f"Deleted {knowledge_base_history_rows_deleted} rows from knowledge_base_history and {knowledge_base_rows_deleted} rows from knowledge_base.")
         return knowledge_base_history_rows_deleted, knowledge_base_rows_deleted
 
-    def insert_named_entity_records(self, named_entity_list: List[Tuple[NamedEntityHistory, List[NamedEntity]]]):
+    def insert_named_entity_records(self, named_entity_list: List[Tuple[NamedEntityHistory, List[NamedEntity]]]) -> bool:
         """
+        insert named entity records into the database
 
-        :param knowledge_base_list: List of tuples containing NamedEntityHistory and associated NamedEntity records
-        :return: True if the insertion is successful, False otherwise
+        :param named_entity_list: a list of tuples containing NamedEntityHistory and associated NamedEntity records
+        :return: true if the insertion is successful, false otherwise
         """
         with self.session_scope() as session:
             try:
@@ -381,15 +386,18 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                 self.logger.error(f"Error occurred while inserting `NamedEntityHistory` and `NamedEntity` records: {str(e)}")
                 return False
 
-    def get_named_entity_bibcodes(self, feature_name_entity=None, feature_type_entity=None, target_entity=None, confidence_score=None, date=None):
+    def get_named_entity_bibcodes(self, feature_name_entity: str = None, feature_type_entity: str = None,
+                                        target_entity: str = None, confidence_score: float = None, date: datetime = None) -> \
+                                        List[Tuple[str, str, str, str, float, str]]:
         """
+        retrieve named entity bibcodes and related information based on the given parameters
 
-        :param feature_name_entity:
-        :param feature_type_entity:
-        :param target_entity:
-        :param confidence_score:
-        :param date:
-        :return:
+        :param feature_name_entity: the feature name entity to filter by (optional)
+        :param feature_type_entity: the feature type entity to filter by (optional)
+        :param target_entity: the target entity to filter by (optional)
+        :param confidence_score: the minimum confidence score to filter by (optional)
+        :param date: the minimum date to filter by (optional)
+        :return: a list of tuples containing (bibcode, target_entity, feature_type_entity, feature_name_entity, confidence_score, date)
         """
         result = []
         with self.session_scope() as session:
