@@ -7,9 +7,8 @@ from adsputils import setup_logging, load_config
 
 import argparse
 
-from config import PLANETARYNAMES_PIPELINE_ACTION
 from adsplanetnamepipe import tasks
-from adsplanetnamepipe.utils.common import EntityArgs
+from adsplanetnamepipe.utils.common import PLANETARYNAMES_PIPELINE_ACTION, EntityArgs
 
 proj_home = os.path.realpath(os.path.dirname(__file__))
 config = load_config(proj_home=proj_home)
@@ -111,10 +110,8 @@ if __name__ == '__main__':
                                              feature_type=current_feature_type,
                                              feature_type_plural=app.get_plural_feature_type_entity(current_feature_type),
                                              feature_name=feature_name,
-                                             context_ambiguous_feature_names=app.get_context_ambiguous_feature_name(
-                                                 feature_name),
-                                             multi_token_containing_feature_names=app.get_multi_token_containing_feature_name(
-                                                 feature_name),
+                                             context_ambiguous_feature_names=app.get_context_ambiguous_feature_name(feature_name),
+                                             multi_token_containing_feature_names=app.get_multi_token_containing_feature_name(feature_name),
                                              name_entity_labels=app.get_named_entity_label(),
                                              all_targets=app.get_target_entities())
                     # actions that needs to go through queue

@@ -3,13 +3,33 @@
 
 import regex
 import unicodedata
-from typing import List, Dict, Union
+from typing import List, Dict, Union, TypedDict
+from enum import Enum
 
 from adsputils import setup_logging, load_config
 
 logger = setup_logging('utils')
 config = {}
 config.update(load_config())
+
+# types of actions that go through queue, collecting knowledge base data, identifying USGS terms, or both (end_to_end)
+# other types of actions:
+# remove only the last knowledge base records (remove_the_most_recent)
+# remove all knowledge base records except for the last entry (remove_all_but_last)
+# add a keyword manually if the excerpt contains that keyword (add_keyword_to_knowledge_graph)
+# remove a keyword if it exists (remove_keyword_from_knowledge_graph)
+# retrieve all the identified entities (retrieve_identified_entities)
+class PLANETARYNAMES_PIPELINE_ACTION(Enum):
+    collect = 'collect'
+    identify = 'identify'
+    end_to_end = 'end_to_end'
+    remove_the_most_recent = 'remove_the_most_recent'
+    remove_all_but_last = 'remove_all_but_last'
+    add_keyword_to_knowledge_graph = 'add_keyword_to_knowledge_graph'
+    remove_keyword_from_knowledge_graph = 'remove_keyword_from_knowledge_graph'
+    retrieve_identified_entities = 'retrieve_identified_entities'
+    invalid = 'invalid'
+
 
 class EntityArgs():
     """
@@ -44,6 +64,11 @@ class EntityArgs():
         self.multi_token_containing_feature_names = multi_token_containing_feature_names
         self.name_entity_labels = name_entity_labels
         self.all_targets = all_targets
+
+
+class PlanetaryNomenclatureTask(TypedDict):
+    action_type: PLANETARYNAMES_PIPELINE_ACTION
+    args: EntityArgs
 
 
 class Synonyms(object):

@@ -7,9 +7,8 @@ if project_home not in sys.path:
 import unittest
 from unittest.mock import MagicMock, patch
 
-from config import PLANETARYNAMES_PIPELINE_ACTION
 from adsplanetnamepipe.tasks import task_process_planetary_nomenclature, FailedRequest
-from adsplanetnamepipe.utils.common import EntityArgs
+from adsplanetnamepipe.utils.common import PLANETARYNAMES_PIPELINE_ACTION, EntityArgs
 
 
 class TestPlanetaryNomenclature(unittest.TestCase):
@@ -115,6 +114,16 @@ class TestPlanetaryNomenclature(unittest.TestCase):
 
         self.assertEqual(mock_get_keywords.call_count, 2)
         self.assertFalse(result)
+
+    @patch('adsplanetnamepipe.tasks.logger')
+    def test_unhandled_action_type(self, mock_logger):
+        """ calling task queue with invalid action """
+
+        mock_task = {'action_type': 'some unknown action', 'args': self.args}
+        result = task_process_planetary_nomenclature(mock_task)
+
+        self.assertFalse(result)
+        mock_logger.error.assert_called_once_with(f"Unhandled action: {mock_task['action_type']}")
 
 if __name__ == '__main__':
     unittest.main()
