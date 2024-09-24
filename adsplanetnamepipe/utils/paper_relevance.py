@@ -4,25 +4,34 @@ from adsplanetnamepipe.utils.common import EntityArgs, Synonyms
 
 
 class PaperRelevance():
+    """
+    a class that calculates the relevance score of a paper based on various criteria
+
+    this class uses regular expressions to match target and feature type terms,
+    and considers factors such as the paper's database, journal, and the presence
+    of relevant terms to compute a relevance score
+    """
 
     def __init__(self, args: EntityArgs):
         """
+        initialize the PaperRelevance class
 
-        :param args:
+        :param args: configuration arguments containing target and feature type information
         """
         self.synonyms = Synonyms()
         self.re_match_target = regex.compile(r'\b(%s)\b' % self.synonyms.get_target_terms(args.target), flags=regex.IGNORECASE)
         self.re_match_feature_type = regex.compile(r'\b(%s)\b' % self.synonyms.get_feature_type_terms([args.feature_type, args.feature_type_plural]), flags=regex.IGNORECASE)
 
-    def forward(self, text, bibstem, databases, astronomy_main_journals, len_existing_wikidata):
+    def forward(self, text: str, bibstem: str, databases: str, astronomy_main_journals: list, len_existing_wikidata: int) -> float:
         """
+        calculate the relevance score of a paper
 
-        :param text:
-        :param bibstem:
-        :param databases:
-        :param astronomy_main_journals:
-        :param len_existing_wikidata:
-        :return:
+        :param text: the text content of the paper
+        :param bibstem: the bibliographic stem of the paper
+        :param databases: string containing the ads collection the paper is in
+        :param astronomy_main_journals: list of main astronomy journals
+        :param len_existing_wikidata: number of existing Wikidata terms in the paper
+        :return: float representing the calculated relevance score of the paper
         """
         # threshold for num of targets, feature type, and wikidata terms
         threshold = text.count(' ') * 0.001
