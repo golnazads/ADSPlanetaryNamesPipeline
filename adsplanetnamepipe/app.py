@@ -47,7 +47,7 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
                                                           FeatureName.feature_type_entity == feature_type_entity)) \
                                              .order_by(FeatureName.entity.asc()) \
                                              .all()
-            if len(rows) > 1:
+            if rows:
                 feature_name_entities = []
                 for row in rows:
                     feature_name_entities.append(row.entity)
@@ -95,7 +95,7 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
         """
         with self.session_scope() as session:
             rows = session.query(AmbiguousFeatureName).filter(AmbiguousFeatureName.entity == feature_name_entity).all()
-            if len(rows) > 1:
+            if rows:
                 context = []
                 for row in rows:
                     context.append(row.context)
@@ -113,7 +113,7 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
         """
         with self.session_scope() as session:
             rows = session.query(MultiTokenFeatureName).filter(MultiTokenFeatureName.entity ==  feature_name_entity).all()
-            if len(rows) > 1:
+            if rows:
                 multi_token_entity = []
                 for row in rows:
                     multi_token_entity.append(row.multi_token_entity)
@@ -130,7 +130,7 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
         """
         with self.session_scope() as session:
             rows = session.query(NamedEntityLabel).all()
-            if len(rows) > 1:
+            if rows:
                 sorted_rows = sorted(rows, key=NamedEntityLabel.sort_key)
                 named_entity_label = [row.toJSON() for row in sorted_rows]
                 return named_entity_label
@@ -146,7 +146,7 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
         """
         with self.session_scope() as session:
             rows = session.query(Target).all()
-            if len(rows) > 1:
+            if rows:
                 target_entities = []
                 for row in rows:
                     target_entities.append(row.entity)
