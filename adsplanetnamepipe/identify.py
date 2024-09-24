@@ -18,12 +18,21 @@ from adsplanetnamepipe.utils.label_and_confidence import LabelAndConfidence
 
 class IdentifyPlanetaryEntities():
 
-    search_retrieval = None
+    """
+    a class that implements a pipeline for identifying planetary entities in scientific literature
+
+    this class integrates various components such as search retrieval, excerpt matching,
+    named entity recognition, keyword extraction, knowledge graph analysis, paper relevance
+    scoring, local language model processing, and entity labeling and confidence scoring
+    """
 
     def __init__(self, args: EntityArgs, keywords_positive: List[List['str']], keywords_negative: List[List['str']]):
         """
+        initialize the IdentifyPlanetaryEntities class
 
-        :param args:
+        :param args: configuration arguments for the pipeline
+        :param keywords_positive: list of lists containing positive keywords
+        :param keywords_negative: list of lists containing negative keywords
         """
         self.args = args
         # step 1 of the pipeline
@@ -48,12 +57,12 @@ class IdentifyPlanetaryEntities():
                                                    args.feature_name])
         self.score_format = '%.{}f'.format(config['PLANETARYNAMES_PIPELINE_FORMAT_SIGNIFICANT_DIGITS'])
 
-
     def get_knowledge_graph_score(self, keywords: List[List['str']]) -> float:
         """
+        calculate the knowledge graph score based on positive and negative scores
 
-        :param keywords:
-        :return:
+        :param keywords: list of lists containing keywords to evaluate
+        :return: float representing the calculated knowledge graph score
         """
         positive_score = self.knowledge_graph_positive.forward(keywords)
         negative_score = self.knowledge_graph_negative.forward(keywords)
@@ -62,9 +71,10 @@ class IdentifyPlanetaryEntities():
 
     def get_paper_relevance_score(self, doc: dict) -> float:
         """
+        calculate the paper relevance score for a given document
 
-        :param doc:
-        :return:
+        :param doc: dictionary containing document information
+        :return: float representing the calculated paper relevance score
         """
         text = ' '.join(doc.get('title', '')) + ' ' + doc.get('abstract', '') + ' ' + doc.get('body', '')
         score = self.paper_relevance.forward(
@@ -78,17 +88,19 @@ class IdentifyPlanetaryEntities():
 
     def get_local_llm_score(self, doc: dict, excerpt: str) -> float:
         """
+        calculate the local LLM score for a given document and excerpt
 
-        :param doc:
-        :param excerpt:
-        :return:
+        :param doc: dictionary containing document information
+        :param excerpt: string containing the relevant excerpt from the document
+        :return: float representing the calculated local LLM score
         """
         return self.local_llm.forward(doc['title'], doc.get('abstract', None), excerpt)
 
     def identify(self) -> List[Tuple[NamedEntityHistory, List[NamedEntity]]]:
         """
+        identify planetary entities using the pipeline
 
-        :return: List of tuples containing NamedEntityHistory and associated NamedEntity records
+        :return: list of tuples containing NamedEntityHistory and associated NamedEntity records
         """
         identified: List[Tuple[NamedEntityHistory, List[NamedEntity]]] = []
 

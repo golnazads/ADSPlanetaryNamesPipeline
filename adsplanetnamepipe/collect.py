@@ -12,12 +12,19 @@ from adsplanetnamepipe.utils.paper_relevance import PaperRelevance
 
 class CollectKnowldegeBase():
 
-    search_retrieval = None
+    """
+    a class that implements a pipeline for collecting knowledge base information from scientific literature
+
+    this class integrates various components such as search retrieval, excerpt matching,
+    named entity recognition, keyword extraction, paper relevance scoring, and local
+    language model processing to collect both positive and negative knowledge base entries
+    """
 
     def __init__(self, args: EntityArgs):
         """
+        initialize the CollectKnowldegeBase class
 
-        :param args:
+        :param args: configuration arguments for the pipeline
         """
         self.args = args
         # step 1 of the pipeline
@@ -38,9 +45,10 @@ class CollectKnowldegeBase():
 
     def get_paper_relevance_score(self, doc: dict) -> float:
         """
+        calculate the paper relevance score for a given document
 
-        :param doc:
-        :return:
+        :param doc: dictionary containing document information
+        :return: float representing the calculated paper relevance score
         """
         text = ' '.join(doc.get('title', '')) + ' ' + doc.get('abstract', '') + ' ' + doc.get('body', '')
         return self.paper_relevance.forward(
@@ -53,17 +61,19 @@ class CollectKnowldegeBase():
 
     def get_local_llm_score(self, doc: dict, excerpt: str) -> float:
         """
+        calculate the local LLM score for a given document and excerpt
 
-        :param doc:
-        :param excerpt:
-        :return:
+        :param doc: dictionary containing document information
+        :param excerpt: string containing the relevant excerpt from the document
+        :return: float representing the calculated local LLM score
         """
         return self.local_llm.forward(doc['title'], doc.get('abstract', None), excerpt)
 
     def collect_KB_positive(self) -> List[Tuple[KnowledgeBaseHistory, List[KnowledgeBase]]]:
         """
+        collect positive knowledge base entries from scientific literature
 
-        :return: List of tuples containing KnowledgeBaseHistory and associated KnowledgeBase records
+        :return: list of tuples containing KnowledgeBaseHistory and associated KnowledgeBase records
         """
         collected: List[Tuple[KnowledgeBaseHistory, List[KnowledgeBase]]] = []
 
@@ -138,8 +148,9 @@ class CollectKnowldegeBase():
 
     def collect_KB_negative(self) -> List[Tuple[KnowledgeBaseHistory, List[KnowledgeBase]]]:
         """
+        collect negative knowledge base entries from scientific literature
 
-        :return: List of tuples containing KnowledgeBaseHistory and associated KnowledgeBase records
+        :return: list of tuples containing KnowledgeBaseHistory and associated KnowledgeBase records
         """
         collected: List[Tuple[KnowledgeBaseHistory, List[KnowledgeBase]]] = []
 
@@ -177,10 +188,10 @@ class CollectKnowldegeBase():
 
     def collect(self) -> List[Tuple[KnowledgeBaseHistory, List[KnowledgeBase]]]:
         """
+        collect both positive and negative knowledge base entries
 
-        :return:
+        :return: combined list of tuples containing KnowledgeBaseHistory and associated KnowledgeBase records
         """
-        # collect data for each side, return the records to be added to database
         KB_positive = self.collect_KB_positive()
         KB_negative = self.collect_KB_negative()
         return KB_positive + KB_negative
