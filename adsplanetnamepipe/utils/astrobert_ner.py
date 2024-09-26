@@ -14,6 +14,12 @@ from transformers import TokenClassificationPipeline
 from adsplanetnamepipe.utils.common import EntityArgs
 
 
+# configuration and initialization of the AstroBERT Named Entity Recognition (NER) model
+# includes setting the model path, loading the pre-trained model and tokenizer,
+# and creating a TokenClassificationPipeline for NER tasks specific to astronomical text
+# note: attempted to load the model locally, but due to GitHub file size limitations,
+# the large binary file couldn't be included
+# I think for production, this should be loaded from a local path
 model_path = 'adsabs/astroBERT'
 # model_path = os.path.dirname(__file__) + '/astrobert_ner_files'
 model = AutoModelForTokenClassification.from_pretrained(pretrained_model_name_or_path=model_path, revision='NER-DEAL')

@@ -41,7 +41,7 @@ def task_process_planetary_nomenclature(the_task: PlanetaryNomenclatureTask) -> 
     :param the_task: PlanetaryNomenclatureTask, A typed dictionary containing:
                      - 'action_type': PLANETARYNAMES_PIPELINE_ACTION enum value
                      - 'args': EntityArgs object containing task arguments
-    :return: bool, Returns True if the task is processed successfully, False otherwise
+    :return: bool, returns True if the task is processed successfully, False otherwise
     """
     try:
         # either: action to collect data to setup KB graph
