@@ -92,6 +92,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # timestamp is only for identification action
+    default_timestamp = config['PLANETARYNAMES_PIPELINE_DEFAULT_TIMESTAMP']
     if action_type in [PLANETARYNAMES_PIPELINE_ACTION.identify, PLANETARYNAMES_PIPELINE_ACTION.end_to_end]:
         if args.timestamp:
             try:
@@ -99,12 +100,12 @@ if __name__ == '__main__':
                 timestamp = datetime.strptime(args.timestamp, '%Y-%m-%d')
             except ValueError:
                 logger.error(f"The timestamp '{args.timestamp}' is not in the correct format YYYY-MM-DD. Default 2000-01-01 is used.")
-                timestamp = '2000-01-01'
+                timestamp = default_timestamp
         else:
-            timestamp = '2000-01-01'
+            timestamp = default_timestamp
     else:
         logger.info("`timestamp` argument is only applicable when action=identify. Ignoring the timestamp using default 2000-01-01.")
-        timestamp = '2000-01-01'
+        timestamp = default_timestamp
 
     # the only action command with no required parameter
     if action_type == PLANETARYNAMES_PIPELINE_ACTION.retrieve_identified_entities:
