@@ -117,10 +117,10 @@ class TestSearchRetrieval(unittest.TestCase):
         """ test collect_usgs_terms_query which returns the result of query for the collect step positive """
 
         base_query = 'full:("Rayleigh") full:("Mars") full:("Crater" OR "Craters") '
-        base_query += self.search_retrieval.other_usgs_filters
+        base_query += f'{self.search_retrieval.other_usgs_filters} {self.search_retrieval.date_time_filter}'
         expected_queries = [
-            f'{base_query} {self.search_retrieval.astronomy_journal_filter} property:refereed year:[2000 TO *]',
-            f'{base_query} property:refereed year:[2000 TO *]',
+            f'{base_query} {self.search_retrieval.astronomy_journal_filter} property:refereed year:[{self.search_retrieval.year_start} TO *]',
+            f'{base_query} property:refereed year:[{self.search_retrieval.year_start} TO *]',
             f'{base_query} property:refereed',
             base_query
         ]
@@ -151,10 +151,10 @@ class TestSearchRetrieval(unittest.TestCase):
         """ test collect_usgs_terms_query when no docs is found """
 
         base_query = 'full:("Rayleigh") full:("Mars") full:("Crater" OR "Craters") '
-        base_query += self.search_retrieval.other_usgs_filters
+        base_query += f'{self.search_retrieval.other_usgs_filters} {self.search_retrieval.date_time_filter}'
         expected_queries = [
-            f'{base_query} {self.search_retrieval.astronomy_journal_filter} property:refereed year:[2000 TO *]',
-            f'{base_query} property:refereed year:[2000 TO *]',
+            f'{base_query} {self.search_retrieval.astronomy_journal_filter} property:refereed year:[{self.search_retrieval.year_start} TO *]',
+            f'{base_query} property:refereed year:[{self.search_retrieval.year_start} TO *]',
             f'{base_query} property:refereed',
             base_query
         ]
@@ -174,7 +174,7 @@ class TestSearchRetrieval(unittest.TestCase):
         """ collect_non_usgs_terms_query which returns the result of query for the collect step negative """
 
         expected_query = 'full:(="Rayleigh") -full:("Mars" OR "Mercury" OR "Moon" OR "Venus") '
-        expected_query += f"-{self.search_retrieval.other_usgs_filters}"
+        expected_query += f"-{self.search_retrieval.other_usgs_filters} year:[{self.search_retrieval.year_start} TO *]"
 
         expected_result = [{'bibcode': '2024arXiv240320332S'}, {'bibcode': '2024arXiv240320323T'}]
 
@@ -190,7 +190,7 @@ class TestSearchRetrieval(unittest.TestCase):
         """ collect_non_usgs_terms_query when no docs is found """
 
         expected_query = 'full:(="Rayleigh") -full:("Mars") -full:("Crater" OR "Craters") '
-        expected_query += f"-{self.search_retrieval.other_usgs_filters}"
+        expected_query += f"-{self.search_retrieval.other_usgs_filters} year:[{self.search_retrieval.year_start} TO *]"
 
         # no docs with status code 200
         mock_single_solr_query.return_value = ([], 200)

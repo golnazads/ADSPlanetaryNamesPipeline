@@ -1,6 +1,8 @@
 import requests
 import re
 
+from typing import List, Dict, Tuple
+
 from adsputils import setup_logging, load_config
 
 logger = setup_logging('utils')
@@ -12,42 +14,52 @@ from adsplanetnamepipe.utils.common import EntityArgs
 
 class SearchRetrieval():
 
-    # per Mike, for now, querying planetary journals only for the identification step
-    planetry_journal_filter = ' bibstem:("%s") ' % '" OR "'.join(['Icar', 'JGRE', 'P&SS', 'M&PS', 'E&PSL', 'SSRv', 'PSJ'])
+    """
+    a class that handles retrieval of scientific documents from a Solr search engine
 
-    # for collecting usgs term
-    astronomy_journal_filter = ' bibstem:("%s") ' % '" OR "'.join([
-        "A&A", "AdSpR", "ApJ", "ApJL", "ApJS", "ChGeo", "E&PSL", "EM&P", "GeCoA", "Geo", "GeoJI", "GeoRL", "GGG", "Icar",
-        "JGRA", "JGRB", "JGRE", "LPI", "M&PS", "MNRAS", "NatGe", "Natur", "P&SS", "PASJ", "PASP", "PEPI", "PSJ", "Sci",
-        "SSRv"
-    ])
+    this class constructs and executes queries to retrieve documents related to
+    planetary features, handles pagination, and processes the retrieved documents
+    """
 
-    other_filters = 'database:astronomy fulltext_mtime:["2000-01-01t00:00:00.000Z" TO *]'
+    # filter for collecting usgs term querying astronomy journals
+    # per Mike, for now, querying these journals (only for the identification step)
+    astronomy_journal_filter = 'bibstem:("%s") ' % '" OR "'.join(config['PLANETARYNAMES_PIPELINE_TOP_ASTRONOMY_JOURNALS'])
 
+    # additional filters applied to queries for the identification step
+    other_usgs_filters = 'database:astronomy'
+
+    # list of regex patterns and replacement strings for cleaning HTML from text
     re_replace_html = [
         (re.compile(r'<i>|</i>|<b>|</b>', flags=re.IGNORECASE), ''),
         (re.compile(r'<'), '&#60;'),
         (re.compile(r'>'), '&#62;')
     ]
+    # regex pattern for identifying the references section in document text
     re_references = re.compile(r'.(?=References[\W\s]*[A-Z\[\(0-9]+)')
 
     def __init__(self, args: EntityArgs):
         """
+        initialize the SearchRetrieval class
 
-        :param args:
+        :param args: configuration arguments for constructing queries
         """
-
         self.args = args
+        # an OR of singular and plural feature types for the query
         self.feature_types_ored = '" OR "'.join([self.args.feature_type, self.args.feature_type_plural]) if self.args.feature_type_plural \
                                                                                                          else self.args.feature_type
+        # filter for full-text modification timestamp for the query
+        self.date_time_filter = f'fulltext_mtime:["{self.args.timestamp}t00:00:00.000Z" TO *]'
+        # start year extracted from the timestamp for the query
+        self.year_start = self.args.timestamp.split('-')[0]
 
-    def single_solr_query(self, start, rows, query):
+    def single_solr_query(self, start: int, rows: int, query: str) -> Tuple[List[Dict], int]:
         """
+        execute a single query to the Solr search engine
 
-        :param start:
-        :param rows:
-        :param query:
-        :return:
+        :param start: starting index for pagination
+        :param rows: number of rows to retrieve
+        :param query: Solr query string
+        :return: tuple containing list of document dictionaries and status code
         """
         params = {
             'q': query,
@@ -90,13 +102,14 @@ class SearchRetrieval():
         except requests.exceptions.RequestException as e:
             return None, e
 
-    def solr_query(self, query):
+    def solr_query(self, query: str) -> List[Dict]:
         """
+        execute a paginated query to solr
 
-        :param query:
-        :return:
+        :param query: Solr query string
+        :return: list of document dictionaries
         """
-        index = 1
+        index = 0
         rows = 2000
 
         # go through the loop and get 2000 records at a time
@@ -115,30 +128,21 @@ class SearchRetrieval():
                 break
         return docs
 
-    def identify_terms_query(self):
+    def collect_usgs_terms_query(self) -> List[Dict]:
         """
+        construct and execute a multi-level query to collect USGS terms
 
-        :return:
-        """
-        query = f'full:(="{self.args.feature_name}") full:("{self.args.target}") full:("{self.feature_types_ored}") year:[2000 TO *]'
-        query += self.planetry_journal_filter + self.other_filters
-
-        return self.solr_query(query)
-
-    def collect_usgs_terms_query(self):
-        """
-
-        :return:
+        :return: list of document dictionaries
         """
         query = f'full:("{self.args.feature_name}") full:("{self.args.target}") full:("{self.feature_types_ored}") '
-        query += self.other_filters
+        query += f'{self.other_usgs_filters} {self.date_time_filter}'
 
         # multi level query
         # see if can extract enough records with top filters, if not keep removing filters
         # until either get enough records, or run out of filters
         queries = [
-            f'{query} {self.astronomy_journal_filter} property:refereed year:[2000 TO *]', # all conditions included
-            f'{query} property:refereed year:[2000 TO *]', # without top astronomy journals
+            f'{query} {self.astronomy_journal_filter} property:refereed year:[{self.year_start} TO *]', # all conditions included
+            f'{query} property:refereed year:[{self.year_start} TO *]', # without top astronomy journals
             f'{query} property:refereed', # without top astronomy journals and year
             query  # bare-bone query
         ]
@@ -152,23 +156,21 @@ class SearchRetrieval():
             logger.error(f"Unable to get data from solr for {self.args.feature_name}/{self.args.target}.")
         return docs
 
-    def collect_non_usgs_terms_query(self):
+    def collect_non_usgs_terms_query(self) -> List[Dict]:
         """
+        construct and execute a query to collect non-USGS terms
 
-        :return:
+        :return: list of document dictionaries
         """
         # exclude any record with mention of any of the celestial bodies
         all_targets = '" OR "'.join(self.args.all_targets)
         query = f'full:(="{self.args.feature_name}") -full:("{all_targets}") '
-        query += f'-{self.other_filters}'
+        query += f'-{self.other_usgs_filters} year:[{self.year_start} TO *]'
 
         # 200 is enough for the negative side
-        docs, status_code = self.single_solr_query(query=query, start=1, rows=500)
+        docs, status_code = self.single_solr_query(query=query, start=0, rows=500)
         if status_code == 200:
             return docs
         else:
             logger.error(f"Error querying non usgs terms, got status code: {status_code} from solr.")
         return []
-
-
-
