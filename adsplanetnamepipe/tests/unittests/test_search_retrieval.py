@@ -32,6 +32,7 @@ class TestSearchRetrieval(unittest.TestCase):
             context_ambiguous_feature_names=["asteroid", "main belt asteroid", "Moon", "Mars"],
             multi_token_containing_feature_names=["Rayleigh A", "Rayleigh B", "Rayleigh C", "Rayleigh D"],
             name_entity_labels=[{'label': 'planetary', 'value': 1}, {'label': 'non planetary', 'value': 0}],
+            timestamp='2000-01-01',
             all_targets = ["Mars", "Mercury", "Moon", "Venus"]
         )
         self.search_retrieval = SearchRetrieval(self.args)
@@ -45,7 +46,7 @@ class TestSearchRetrieval(unittest.TestCase):
         mock_response.json.return_value = {'response': {'docs': [solrdata.doc_1, solrdata.doc_2]}}
         mock_get.return_value = mock_response
 
-        docs, status_code = self.search_retrieval.single_solr_query(start=1, rows=10, query='test query')
+        docs, status_code = self.search_retrieval.single_solr_query(start=0, rows=10, query='test query')
 
         self.assertEqual(status_code, 200)
         self.assertEqual(len(docs), 2)
@@ -60,7 +61,7 @@ class TestSearchRetrieval(unittest.TestCase):
         mock_response.status_code = 500
         mock_get.return_value = mock_response
 
-        docs, status_code = self.search_retrieval.single_solr_query(start=1, rows=10, query='test query')
+        docs, status_code = self.search_retrieval.single_solr_query(start=0, rows=10, query='test query')
 
         self.assertIsNone(docs)
         self.assertEqual(status_code, 500)
@@ -71,7 +72,7 @@ class TestSearchRetrieval(unittest.TestCase):
 
         mock_get.side_effect = RequestException("Test Request Exception")
 
-        docs, exception = self.search_retrieval.single_solr_query(start=1, rows=10, query='*:*')
+        docs, exception = self.search_retrieval.single_solr_query(start=0, rows=10, query='*:*')
 
         self.assertIsNone(docs)
         self.assertIsInstance(exception, RequestException)
@@ -92,9 +93,9 @@ class TestSearchRetrieval(unittest.TestCase):
         # the expected number of iterations
         self.assertEqual(mock_single_solr_query.call_count, 3)
         # the expected arguments passed to single_solr_query in each iteration
-        mock_single_solr_query.assert_any_call(start=1, rows=2000, query='*:*')
-        mock_single_solr_query.assert_any_call(start=2001, rows=2000, query='*:*')
-        mock_single_solr_query.assert_any_call(start=4001, rows=2000, query='*:*')
+        mock_single_solr_query.assert_any_call(start=0, rows=2000, query='*:*')
+        mock_single_solr_query.assert_any_call(start=2000, rows=2000, query='*:*')
+        mock_single_solr_query.assert_any_call(start=4000, rows=2000, query='*:*')
 
         self.assertEqual(len(docs), 4)
         self.assertEqual(docs, [{'bibcode': '2024arXiv240320332S'}, {'bibcode': '2024arXiv240320323T'},
@@ -112,24 +113,11 @@ class TestSearchRetrieval(unittest.TestCase):
         self.assertEqual(len(docs), 0)
 
     @patch('adsplanetnamepipe.utils.search_retrieval.SearchRetrieval.solr_query')
-    def test_identify_terms_query(self, mock_solr_query):
-        """ test identify_terms_query which returns the result of query for the identity step """
-
-        expected_query = 'full:(="Rayleigh") full:("Mars") full:("Crater" OR "Craters") year:[2000 TO *]'
-        expected_query += self.search_retrieval.planetry_journal_filter + self.search_retrieval.other_filters
-
-        expected_result = [{'bibcode': '2024arXiv240320332S'}, {'bibcode': '2024arXiv240320323T'}]
-        mock_solr_query.return_value = expected_result
-
-        result = self.search_retrieval.identify_terms_query()
-        self.assertEqual(result, expected_result)
-
-    @patch('adsplanetnamepipe.utils.search_retrieval.SearchRetrieval.solr_query')
     def test_collect_usgs_terms_query(self, mock_solr_query):
         """ test collect_usgs_terms_query which returns the result of query for the collect step positive """
 
         base_query = 'full:("Rayleigh") full:("Mars") full:("Crater" OR "Craters") '
-        base_query += self.search_retrieval.other_filters
+        base_query += self.search_retrieval.other_usgs_filters
         expected_queries = [
             f'{base_query} {self.search_retrieval.astronomy_journal_filter} property:refereed year:[2000 TO *]',
             f'{base_query} property:refereed year:[2000 TO *]',
@@ -163,7 +151,7 @@ class TestSearchRetrieval(unittest.TestCase):
         """ test collect_usgs_terms_query when no docs is found """
 
         base_query = 'full:("Rayleigh") full:("Mars") full:("Crater" OR "Craters") '
-        base_query += self.search_retrieval.other_filters
+        base_query += self.search_retrieval.other_usgs_filters
         expected_queries = [
             f'{base_query} {self.search_retrieval.astronomy_journal_filter} property:refereed year:[2000 TO *]',
             f'{base_query} property:refereed year:[2000 TO *]',
@@ -186,14 +174,14 @@ class TestSearchRetrieval(unittest.TestCase):
         """ collect_non_usgs_terms_query which returns the result of query for the collect step negative """
 
         expected_query = 'full:(="Rayleigh") -full:("Mars" OR "Mercury" OR "Moon" OR "Venus") '
-        expected_query += f"-{self.search_retrieval.other_filters}"
+        expected_query += f"-{self.search_retrieval.other_usgs_filters}"
 
         expected_result = [{'bibcode': '2024arXiv240320332S'}, {'bibcode': '2024arXiv240320323T'}]
 
         mock_single_solr_query.return_value = (expected_result, 200)
         result = self.search_retrieval.collect_non_usgs_terms_query()
 
-        mock_single_solr_query.assert_called_once_with(query=expected_query, start=1, rows=500)
+        mock_single_solr_query.assert_called_once_with(query=expected_query, start=0, rows=500)
         self.assertEqual(result, expected_result)
 
     @patch('adsplanetnamepipe.utils.search_retrieval.SearchRetrieval.single_solr_query')
@@ -202,7 +190,7 @@ class TestSearchRetrieval(unittest.TestCase):
         """ collect_non_usgs_terms_query when no docs is found """
 
         expected_query = 'full:(="Rayleigh") -full:("Mars") -full:("Crater" OR "Craters") '
-        expected_query += f"-{self.search_retrieval.other_filters}"
+        expected_query += f"-{self.search_retrieval.other_usgs_filters}"
 
         # no docs with status code 200
         mock_single_solr_query.return_value = ([], 200)
@@ -221,7 +209,7 @@ class TestSearchRetrieval(unittest.TestCase):
         """ test when solr returns no docs """
 
         expected_query = 'full:(="Rayleigh") -full:("Mars") -full:("Crater" OR "Craters") '
-        expected_query += f"-{self.search_retrieval.other_filters}"
+        expected_query += f"-{self.search_retrieval.other_usgs_filters}"
 
         mock_single_solr_query.side_effect = [
             ([], 200),  # First call returns an empty list with status code 200
@@ -231,7 +219,7 @@ class TestSearchRetrieval(unittest.TestCase):
         result = self.search_retrieval.solr_query(expected_query)
 
         self.assertEqual(result, [])
-        mock_single_solr_query.assert_called_with(start=1, rows=2000, query=expected_query)
+        mock_single_solr_query.assert_called_with(start=0, rows=2000, query=expected_query)
         mock_logger.info.assert_called_with("Got 0 docs from solr.")
 
     @patch('requests.get')
@@ -241,7 +229,7 @@ class TestSearchRetrieval(unittest.TestCase):
         start = 0
         rows = 10
         query = 'full:(="Rayleigh") -full:("Mars") -full:("Crater" OR "Craters") '
-        query += f"-{self.search_retrieval.other_filters}"
+        query += f"-{self.search_retrieval.other_usgs_filters}"
 
         mock_response = MagicMock()
         mock_response.status_code = 200

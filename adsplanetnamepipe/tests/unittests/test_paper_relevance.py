@@ -31,6 +31,7 @@ class TestPaperRelevance(unittest.TestCase):
             context_ambiguous_feature_names = ["asteroid", "main belt asteroid", "Moon", "Mars"],
             multi_token_containing_feature_names = ["Rayleigh A", "Rayleigh B", "Rayleigh C", "Rayleigh D"],
             name_entity_labels = [{'label': 'planetary', 'value': 1}, {'label': 'non planetary', 'value': 0}],
+            timestamp='2000-01-01',
             all_targets = ["Mars", "Mercury", "Moon", "Venus"]
         )
         self.paper_relevance = PaperRelevance(self.args)

@@ -32,6 +32,7 @@ class TestExtractKeywords(unittest.TestCase):
             context_ambiguous_feature_names = ["asteroid", "main belt asteroid", "Moon", "Mars"],
             multi_token_containing_feature_names = ["Rayleigh A", "Rayleigh B", "Rayleigh C", "Rayleigh D"],
             name_entity_labels = [{'label': 'planetary', 'value': 1}, {'label': 'non planetary', 'value': 0}],
+            timestamp='2000-01-01',
             all_targets = ["Mars", "Mercury", "Moon", "Venus"]
         )
         self.extract_keywords = ExtractKeywords(self.args)
@@ -143,15 +144,20 @@ class TestExtractKeywords(unittest.TestCase):
         result = self.extract_keywords.wiki.extract_top_keywords(excerpts.doc_1_excerpts[3]['excerpt'])
         self.assertEqual(sorted(result), sorted(expected_keywords))
 
-    @patch('adsplanetnamepipe.utils.extract_keywords.WikiWrapper.re_wiki_vocab')
-    def test_wiki_extract_top_keywords_single_match(self, mock_re_wiki_vocab):
+    def test_wiki_extract_top_keywords_single_match(self):
         """ test when there is only one match with wiki """
 
-        mock_re_wiki_vocab.findall.return_value = ["single_match"]
+        # create a mock instance of regex
+        mock_regex = MagicMock()
+        mock_regex.findall.return_value = ["single_match"]
+
+        # replace the real regex instance with the mock
+        self.extract_keywords.wiki.re_wiki_vocab = mock_regex
+
         result = self.extract_keywords.wiki.extract_top_keywords(excerpts.doc_1_excerpts[1]['excerpt'])
 
         self.assertEqual(result, ["single_match"])
-        mock_re_wiki_vocab.findall.assert_called_once_with(excerpts.doc_1_excerpts[1]['excerpt'])
+        mock_regex.findall.assert_called_once_with(excerpts.doc_1_excerpts[1]['excerpt'])
 
     def test_tfidf_extract_top_keywords(self):
         """ test TfidfWrapper's extract_top_keywords """
@@ -173,6 +179,7 @@ class TestExtractKeywords(unittest.TestCase):
             context_ambiguous_feature_names=[],
             multi_token_containing_feature_names=[],
             name_entity_labels=[{'label': 'planetary', 'value': 1}, {'label': 'non planetary', 'value': 0}],
+            timestamp='2000-01-01',
             all_targets = []
         )
         text = "study are formed within basalt flows (boundaries drawn in white, Ramsey et al., ) whose sources are " \
@@ -206,6 +213,7 @@ class TestExtractKeywords(unittest.TestCase):
             context_ambiguous_feature_names=[],
             multi_token_containing_feature_names=[],
             name_entity_labels=[{'label': 'planetary', 'value': 1}, {'label': 'non planetary', 'value': 0}],
+            timestamp='2000-01-01',
             all_targets = []
         )
         text = "study are formed within basalt flows (boundaries drawn in white, Ramsey et al., ) whose sources are " \

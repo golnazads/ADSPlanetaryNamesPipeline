@@ -80,6 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--keyword', help='knowledge graph keyword to add or remove manually.')
     parser.add_argument('-c', '--confidence_score', help='(optional) only applicable for action=retrieve_identified_entities, if specified only the identified entities with confidence score >= this score are returned.')
     parser.add_argument('-d', '--days', help='(optional) only applicable for action=retrieve_identified_entities, if specified only the entities identified in the past many days are returned.')
+    parser.add_argument('-s', '--timestamp', help='(Optional) Applicable only when action=identify is specified. If provided, it should be in the format YYYY-MM-DD. Solr records from this date (inclusive) are considered for processing. Records with full-text modifications on or after this date will also be included, even if their original date is earlier.')
     args = parser.parse_args()
     if args.action:
         action_type = map_input_param_to_action_type(args.action)
@@ -89,6 +90,21 @@ if __name__ == '__main__':
     else:
         logger.info('The action arg (-a) is needed for processing! Terminating!')
         sys.exit(1)
+
+    # timestamp is only for identification action
+    if action_type in [PLANETARYNAMES_PIPELINE_ACTION.identify, PLANETARYNAMES_PIPELINE_ACTION.end_to_end]:
+        if args.timestamp:
+            try:
+                # verify the format of the timestamp
+                timestamp = datetime.strptime(args.timestamp, '%Y-%m-%d')
+            except ValueError:
+                logger.error(f"The timestamp '{args.timestamp}' is not in the correct format YYYY-MM-DD. Default 2000-01-01 is used.")
+                timestamp = '2000-01-01'
+        else:
+            timestamp = '2000-01-01'
+    else:
+        logger.info("`timestamp` argument is only applicable when action=identify. Ignoring the timestamp using default 2000-01-01.")
+        timestamp = '2000-01-01'
 
     # the only action command with no required parameter
     if action_type == PLANETARYNAMES_PIPELINE_ACTION.retrieve_identified_entities:
@@ -113,6 +129,7 @@ if __name__ == '__main__':
                                              context_ambiguous_feature_names=app.get_context_ambiguous_feature_name(feature_name),
                                              multi_token_containing_feature_names=app.get_multi_token_containing_feature_name(feature_name),
                                              name_entity_labels=app.get_named_entity_label(),
+                                             timestamp = timestamp,
                                              all_targets=app.get_target_entities())
                     # actions that needs to go through queue
                     if action_type in [PLANETARYNAMES_PIPELINE_ACTION.collect,

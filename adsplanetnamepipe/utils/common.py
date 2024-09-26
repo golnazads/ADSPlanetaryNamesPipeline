@@ -43,10 +43,11 @@ class EntityArgs():
     multi_token_containing_feature_names: List[str]
     name_entity_labels: List[Dict[str, Union[str, int]]]
     all_targets: List[str]
+    timestamp: str
 
     def __init__(self, target: str, feature_type: str, feature_type_plural: str, feature_name: str,
                  context_ambiguous_feature_names: List[str], multi_token_containing_feature_names: List[str],
-                 name_entity_labels: List[Dict[str, Union[str, int]]], all_targets: List[str]=[]):
+                 name_entity_labels: List[Dict[str, Union[str, int]]], timestamp: str, all_targets: List[str]=[]):
         """
 
         :param target:
@@ -55,6 +56,7 @@ class EntityArgs():
         :param feature_name:
         :param context_ambiguous_feature_names: list of context for feature name, can be empty
         :param multi_token_containing_feature_names: list of multi token feature names that contains the feature name, can be emtpy
+        :param timestamp:
         """
         self.target = target
         self.feature_type = feature_type
@@ -63,6 +65,7 @@ class EntityArgs():
         self.context_ambiguous_feature_names = context_ambiguous_feature_names
         self.multi_token_containing_feature_names = multi_token_containing_feature_names
         self.name_entity_labels = name_entity_labels
+        self.timestamp = timestamp
         self.all_targets = all_targets
 
 
