@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple, Dict
 from collections import defaultdict
 
 from adsputils import setup_logging, load_config
@@ -14,12 +14,20 @@ from adsplanetnamepipe.utils.common import EntityArgs
 
 class KnowledgeGraph():
 
-    def __init__(self, args: EntityArgs, keywords: List[List['str']], special_keywords: List[List['str']]):
-        """
+    """
+    a class that builds and queries a knowledge graph based on keywords from scientific texts
 
-        :param args:
-        :param keywords:
-        :param special_keywords:
+    this class creates a graph representation of keyword relationships, with special
+    emphasis on certain keywords, and provides methods to query the graph for relevance scores
+    """
+
+    def __init__(self, args: EntityArgs, keywords: List[List[str]], special_keywords: List[List[str]]):
+        """
+        initialize the KnowledgeGraph class
+
+        :param args: configuration arguments containing feature name and other settings
+        :param keywords: list of keyword lists extracted from texts
+        :param special_keywords: list of special keyword lists with higher weights
         """
         self.args = args
         self.score_format = '%.{}f'.format(config['PLANETARYNAMES_PIPELINE_FORMAT_SIGNIFICANT_DIGITS'])
@@ -27,11 +35,12 @@ class KnowledgeGraph():
 
         self.build_graph(keywords, special_keywords)
 
-    def build_graph(self, keywords_list, special_keywords_list):
+    def build_graph(self, keywords_list: List[List[str]], special_keywords_list: List[List[str]]):
         """
+        build the knowledge graph from the provided keywords and special keywords
 
-        :param keywords_list:
-        :param special_keywords_list: these have a higher weights
+        :param keywords_list: list of keyword lists
+        :param special_keywords_list: list of special keyword lists with higher weights
         :return:
         """
         self.keyword_counts, self.pair_counts = self.count_keywords(keywords_list)
@@ -44,6 +53,7 @@ class KnowledgeGraph():
 
     def create_graph(self):
         """
+        create the graph structure based on keyword and pair counts
 
         :return:
         """
@@ -55,11 +65,12 @@ class KnowledgeGraph():
             # weights for regular keywords are 1, for special keywords are 2
             self.add_nodes_and_edges(keyword_list, pair_list, weight)
 
-    def count_keywords(self, keywords_list):
+    def count_keywords(self, keywords_list: List[List[str]]) -> Tuple[Dict[str, int], Dict[Tuple[str, str], int]]:
         """
+        count the occurrences of individual keywords and keyword pairs
 
-        :param keywords_list:
-        :return:
+        :param keywords_list: list of keyword lists
+        :return: tuple of dictionaries containing keyword counts and pair counts
         """
         keyword_counts = defaultdict(int)
         pair_counts = defaultdict(int)
@@ -73,12 +84,13 @@ class KnowledgeGraph():
                         pair_counts[(keyword, other_keyword)] += 1
         return keyword_counts, pair_counts
 
-    def add_nodes_and_edges(self, keyword_list, pair_list, weight):
+    def add_nodes_and_edges(self, keyword_list: List[Tuple[str, int]], pair_list: List[Tuple[Tuple[str, str], int]], weight: int):
         """
+        add nodes and edges to the graph based on keyword and pair counts
 
-        :param keyword_list:
-        :param pair_list:
-        :param weight:
+        :param keyword_list: list of tuples containing keywords and their counts
+        :param pair_list: list of tuples containing keyword pairs and their counts
+        :param weight: weight factor for the edges
         :return:
         """
         for keyword, count in keyword_list:
@@ -89,11 +101,12 @@ class KnowledgeGraph():
             if self.graph.has_node(keyword1) and self.graph.has_node(keyword2*weight):
                 self.graph.add_edge(keyword1, keyword2, weight=count)
 
-    def query_path(self, keyword):
+    def query_path(self, keyword: str) -> float:
         """
+        query the graph for the path weight between a keyword and the feature name
 
-        :param keyword:
-        :return:
+        :param keyword: the keyword to query
+        :return: float the average weight of the path
         """
         if not self.graph.has_node(keyword):
             return 0
@@ -114,11 +127,12 @@ class KnowledgeGraph():
         except nx.NetworkXNoPath:
             return 0
 
-    def forward(self, keywords):
+    def forward(self, keywords: List[str]) -> float:
         """
+        calculate the average path weight for a list of keywords
 
-        :param keywords:
-        :return: average of keyword path's weights
+        :param keywords: list of keywords to query
+        :return: float the average path weight, or -1 if the graph is empty
         """
         # if no data was available to setup the knowledge graph,
         # send the indication with socre = -1

@@ -24,23 +24,40 @@ from adsplanetnamepipe.utils.common import EntityArgs
 
 class LabelAndConfidence(object):
 
+    """
+    a class that trains, saves, loads, and uses a neural network model to predict labels and confidence scores
+
+    this class manages a Keras Sequential model for binary classification, using scores from knowledge graphs,
+    paper relevance, and local language models as inputs to predict entity labels and confidence scores
+    """
+
+    # defines the number of units in each layer of the neural network
     units = [16, 8, 8, 1]
+    # the optimization algorithm used for training
     optimizer = 'adam'
+    # the loss function used for training
     loss = 'binary_crossentropy'
+    # maximum number of training epochs
     epoch = 100
+    # number of samples per gradient update during training
     batch_size = 1
 
+    # path to the CSV file containing training data
     training_file = '/label_and_confidence_files/training.csv'
+    # path where the trained model will be saved or loaded from
     model_file = os.path.dirname(__file__) + '/label_and_confidence_files/model'
 
+    # maximum number of attempts to train a model meeting the accuracy threshold
     max_build_retry = 5
+    # minimum accuracy required for a trained model to be accepted
     accuracy_threshold = 0.96
 
-    def __init__(self, args: EntityArgs, train_mode: bool=False):
+    def __init__(self, args: EntityArgs, train_mode: bool = False):
         """
+        initialize the LabelAndConfidence class
 
-        :param args:
-        :param train_mode:
+        :param args: configuration arguments for the model and prediction process
+        :param train_mode: boolean indicating whether to train a new model or load an existing one
         """
         try:
             if not train_mode:
@@ -53,13 +70,14 @@ class LabelAndConfidence(object):
         self.args = args
         self.confidence_format = '%.{}f'.format(config['PLANETARYNAMES_PIPELINE_FORMAT_SIGNIFICANT_DIGITS'])
 
-    def forward(self, knowledge_graph_score, paper_relevance_score, local_llm_score):
+    def forward(self, knowledge_graph_score: float, paper_relevance_score: float, local_llm_score: float) -> Tuple[str, float]:
         """
+        predict the label and confidence score for given input scores
 
-        :param knowledge_graph_score:
-        :param paper_relevance_score:
-        :param local_llm_score:
-        :return: confidence and label
+        :param knowledge_graph_score: score from the knowledge graph analysis
+        :param paper_relevance_score: score from the paper relevance analysis
+        :param local_llm_score: score from the local language model analysis
+        :return: tuple containing the predicted label and confidence score
         """
         try:
             if not self.model:
@@ -75,10 +93,11 @@ class LabelAndConfidence(object):
             logger.error(f"Exception in forward method of LabelAndConfidence: {str(e)}")
             return '', -1
 
-    def train(self):
+    def train(self) -> float:
         """
+        train the neural network model using the training data
 
-        :return:
+        :return: float representing the test accuracy of the trained model
         """
         try:
             df = pd.read_csv(os.path.dirname(__file__) + self.training_file)
@@ -125,6 +144,7 @@ class LabelAndConfidence(object):
 
     def train_and_save(self):
         """
+        train the model and save it if the accuracy threshold is met
 
         :return:
         """
@@ -138,6 +158,7 @@ class LabelAndConfidence(object):
 
     def save(self):
         """
+        save the trained model to a file
 
         :return:
         """
@@ -148,6 +169,7 @@ class LabelAndConfidence(object):
 
     def load(self):
         """
+        load a previously saved model from a file
 
         :return:
         """

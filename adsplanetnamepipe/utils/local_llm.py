@@ -11,20 +11,29 @@ from adsplanetnamepipe.utils.common import EntityArgs
 
 class LocalLLM():
 
+    """
+    a class that interacts with a local large language model to analyze scientific texts
+
+    this class sends requests to the API endpoint to analyze scientific articles
+    and determine the probability that a given term refers to a specific feature on a target celestial body
+    """
+
     def __init__(self, args: EntityArgs):
         """
+        initialize the LocalLLM class
 
-        :param args:
+        :param args: configuration arguments containing feature name, feature type, and target information
         """
         self.args = args
 
-    def forward(self, title, abstract, excerpt):
+    def forward(self, title: str, abstract: str, excerpt: str) -> float:
         """
+        analyze a scientific article and determine the probability of a term referring to a specific feature
 
-        :param title:
-        :param abstract:
-        :param excerpt:
-        :return:
+        :param title: the title of the scientific article, is a list
+        :param abstract: the abstract of the scientific article
+        :param excerpt: the specific excerpt to be analyzed
+        :return: float representing the probability (between 0 and 1) that the feature name refers to the specified feature type on the target
         """
         if abstract:
             title = ' '.join(title)
