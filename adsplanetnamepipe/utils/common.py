@@ -12,14 +12,20 @@ logger = setup_logging('utils')
 config = {}
 config.update(load_config())
 
-# types of actions that go through queue, collecting knowledge base data, identifying USGS terms, or both (end_to_end)
-# other types of actions:
-# remove only the last knowledge base records (remove_the_most_recent)
-# remove all knowledge base records except for the last entry (remove_all_but_last)
-# add a keyword manually if the excerpt contains that keyword (add_keyword_to_knowledge_graph)
-# remove a keyword if it exists (remove_keyword_from_knowledge_graph)
-# retrieve all the identified entities (retrieve_identified_entities)
 class PLANETARYNAMES_PIPELINE_ACTION(Enum):
+    """
+    an enumeration of actions that can be performed in the planetary names pipeline
+
+    types of actions that go through queue, collecting knowledge base data, identifying USGS terms, or both (end_to_end)
+    other types of actions:
+        remove only the last knowledge base records (remove_the_most_recent)
+        remove all knowledge base records except for the last entry (remove_all_but_last)
+        add a keyword manually if the excerpt contains that keyword (add_keyword_to_knowledge_graph)
+        remove a keyword if it exists (remove_keyword_from_knowledge_graph)
+        retrieve all the identified entities (retrieve_identified_entities)
+    also included is invalid when the action is none of the above mentioned
+    """
+
     collect = 'collect'
     identify = 'identify'
     end_to_end = 'end_to_end'
@@ -49,14 +55,17 @@ class EntityArgs():
                  context_ambiguous_feature_names: List[str], multi_token_containing_feature_names: List[str],
                  name_entity_labels: List[Dict[str, Union[str, int]]], timestamp: str, all_targets: List[str]=[]):
         """
+        initialize the EntityArgs class
 
-        :param target:
-        :param feature_type:
-        :param feature_type_plural:
-        :param feature_name:
-        :param context_ambiguous_feature_names: list of context for feature name, can be empty
-        :param multi_token_containing_feature_names: list of multi token feature names that contains the feature name, can be emtpy
-        :param timestamp:
+        :param target: the celestial body targeted
+        :param feature_type: the type of the feature
+        :param feature_type_plural: plural form of the feature type
+        :param feature_name: name of the feature
+        :param context_ambiguous_feature_names: list of contexts for ambiguous feature names
+        :param multi_token_containing_feature_names: list of multi-token feature names containing the feature name
+        :param name_entity_labels: list of dictionaries containing name entity labels
+        :param timestamp: timestamp used for fulltext and year filtering
+        :param all_targets: list of all target bodies
         """
         self.target = target
         self.feature_type = feature_type
@@ -70,11 +79,23 @@ class EntityArgs():
 
 
 class PlanetaryNomenclatureTask(TypedDict):
+    """
+    a TypedDict class representing a task in the planetary nomenclature pipeline
+
+    this class defines the structure of a task, including the type of action
+    to be performed and the associated entity arguments
+    """
     action_type: PLANETARYNAMES_PIPELINE_ACTION
     args: EntityArgs
 
 
 class Synonyms(object):
+    """
+    a class to manage synonyms for planetary terms
+
+    this class provides methods to retrieve and add synonyms for various
+    planetary terms, including targets and feature types
+    """
 
     # generated 5/20/2022
     synonym_list = {
@@ -111,38 +132,42 @@ class Synonyms(object):
         "venus": "venus, venusian, venutian, venusquakes, venuslike, venusion, venusionopause",
     }
 
-    def get(self, term):
+    def get(self, term: str) -> str:
         """
+        get synonyms for a given term
 
-        :param term:
-        :return:
+        :param term: the term to find synonyms for
+        :return: string of the term and its synonyms, separated by '|'
         """
         term_synonyms = self.synonym_list.get(term.lower(), '')
         if not term_synonyms:
             return term
         return term + "|" + term_synonyms.replace(', ', '|')
 
-    def get_target_terms(self, target):
+    def get_target_terms(self, target: str) -> str:
         """
+        get synonyms for a target celestial body
 
-        :param target:
-        :return:
+        :param target: the target celestial body
+        :return: string of the target and its synonyms, separated by '|'
         """
         return self.get(target)
 
-    def get_feature_type_terms(self, feature_types):
+    def get_feature_type_terms(self, feature_types: List[str]) -> str:
         """
+        get synonyms for feature types
 
-        :param feature_types:
-        :return:
+        :param feature_types: list of feature types
+        :return: string of feature types and their synonyms, separated by '|'
         """
         return self.get(feature_types[0]) + '|' + self.get(feature_types[1])
 
-    def add_synonyms(self, terms):
+    def add_synonyms(self, terms: List[str]) -> List[str]:
         """
+        add synonyms to a list of terms
 
-        :param terms:
-        :return:
+        :param terms: list of terms to add synonyms to
+        :return: list of original terms and their synonyms
         """
         # add in synonyms of the terms, if available
         # turn everything lower case
@@ -159,13 +184,21 @@ class Synonyms(object):
 
 
 class Unicode():
+    """
+    a class to handle Unicode-related operations
 
+    this class provides methods to replace control characters in text
+    """
+
+    # a compiled regular expression to match Unicode control characters
     re_control_chars = regex.compile(r'[\0-\x1f\x7f-\x9f]')
 
-    def replace_control_chars(self, excerpt):
+    def replace_control_chars(self, excerpt: str) -> str:
         """
+        replace control characters in a given excerpt
 
-        :return:
+        :param excerpt: the text excerpt to process
+        :return: processed string with control characters replaced
         """
         def replace(match):
             char = match.group(0)
