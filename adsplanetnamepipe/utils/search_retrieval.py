@@ -1,6 +1,5 @@
 import requests
 import re
-
 from typing import List, Dict, Tuple
 
 from adsputils import setup_logging, load_config
