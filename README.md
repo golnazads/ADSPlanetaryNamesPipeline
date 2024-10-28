@@ -2,7 +2,7 @@
 planetary names pipeline
 
 [![Build Status](https://travis-ci.org/adsabs/ADSPlanetaryNamesPipeline.svg)](https://travis-ci.org/adsabs/ADSPlanetaryNamesPipeline)
-[![Coverage Status](https://coveralls.io/repos/adsabs/ADSPlanetaryNamesPipeline/badge.svg)](https://coveralls.io/r/adsabs/ADSPlanetaryNamesPipeline)
+[![Coverage Status](https://coveralls.io/repos/github/adsabs/ADSPlanetaryNamesPipeline/badge.svg?branch=main)](https://coveralls.io/github/adsabs/ADSPlanetaryNamesPipeline?branch=main)
 
 
 ## Short summary
