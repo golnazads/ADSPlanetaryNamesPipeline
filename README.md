@@ -1,7 +1,7 @@
 # ADSPlanetaryNamesPipeline
 planetary names pipeline
 
-[![Build Status](https://github.com/adsabs/ADSPlanetaryNamesPipeline/actions/workflows/python_actions.yml/badge.svg?event=pull_request)](https://github.com/adsabs/ADSPlanetaryNamesPipeline/actions/workflows/python_actions.yml) 
+[![Build Status](https://github.com/adsabs/ADSPlanetaryNamesPipeline/actions/workflows/python_actions.yml/badge.svg?branch=main&event=push&conclusion=success)](https://github.com/adsabs/ADSPlanetaryNamesPipeline/actions/workflows/python_actions.yml)
 [![Coverage Status](https://coveralls.io/repos/github/adsabs/ADSPlanetaryNamesPipeline/badge.svg?branch=main)](https://coveralls.io/github/adsabs/ADSPlanetaryNamesPipeline?branch=main)
 
 
