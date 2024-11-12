@@ -939,11 +939,11 @@ class TestADSPlanetaryNamesPipelineCeleryNoStubdata(unittest.TestCase):
                 mock_debug.assert_called_once_with("No new feature name entities needed to be added to `usgs_nomenclature`.")
 
     @patch.object(app.ADSPlanetaryNamesPipelineCelery, 'insert_target_entities', return_value=True)
+    @patch.object(app.ADSPlanetaryNamesPipelineCelery, 'insert_feature_type_records', return_value=True)
     @patch.object(app.ADSPlanetaryNamesPipelineCelery, 'insert_new_usgs_nomenclature_entities', return_value=False)
-    @patch.object(app.ADSPlanetaryNamesPipelineCelery, 'insert_feature_type_records')
     @patch.object(app.ADSPlanetaryNamesPipelineCelery, 'insert_feature_name_records')
-    def test_add_new_usgs_entities_returns_false(self, mock_insert_feature_name_records, mock_insert_feature_types,
-                                                 mock_insert_usgs_nomenclature_entities, mock_insert_target_entities):
+    def test_add_new_usgs_entities_returns_false(self, mock_insert_feature_name_records, mock_insert_usgs_nomenclature_entities,
+                                                 mock_insert_feature_types, mock_insert_target_entities):
         """ test add_new_usgs_entities method when usgs_nomenclature insertion fails, causing the function to return False """
 
         data = [{
@@ -963,8 +963,8 @@ class TestADSPlanetaryNamesPipelineCeleryNoStubdata(unittest.TestCase):
 
         # confirm that the appropriate insert methods were called
         mock_insert_target_entities.assert_called_once()
+        mock_insert_feature_types.assert_called_once()
         mock_insert_usgs_nomenclature_entities.assert_called_once_with(['new_feature_name_1'])
-        mock_insert_feature_types.assert_not_called()
         mock_insert_feature_name_records.assert_not_called()
 
     def test_insert_multi_token_feature_names_exception(self):

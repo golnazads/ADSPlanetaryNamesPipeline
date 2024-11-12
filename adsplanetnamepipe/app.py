@@ -720,8 +720,8 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
         # insert all collected entries
         with self.session_scope() as session:
             try:
-                # session.bulk_save_objects(new_ambiguous_feature_names)
-                # session.commit()
+                session.bulk_save_objects(new_ambiguous_feature_names)
+                session.commit()
                 self.logger.debug(f"Inserted {len(new_ambiguous_feature_names)} new ambiguous feature names.")
                 return True
             except Exception as e:
@@ -785,8 +785,8 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
             # insert all collected entries
             with self.session_scope() as session:
                 try:
-                    # session.bulk_save_objects(new_multi_token_entities)
-                    # session.commit()
+                    session.bulk_save_objects(new_multi_token_entities)
+                    session.commit()
                     self.logger.debug(f"Inserted {len(new_multi_token_entities)} new associations into `multi_token_feature_names`.")
                     return True
                 except Exception as e:
