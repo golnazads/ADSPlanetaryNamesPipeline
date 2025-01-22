@@ -44,7 +44,7 @@ def task_process_planetary_nomenclature(the_task: dict) -> bool:
     :return: bool, returns True if the task is processed successfully, False otherwise
     """
     try:
-        # # deserialize
+        # deserialize
         action_type = PLANETARYNAMES_PIPELINE_ACTION(the_task['action_type'])
         entity_args = EntityArgs(**the_task["args"])
 

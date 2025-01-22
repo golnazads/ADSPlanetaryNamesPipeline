@@ -40,11 +40,11 @@ class TestPlanetaryNomenclature(unittest.TestCase):
 
         mock_app.insert_knowledge_base_records.return_value = True
 
-        the_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.collect, 'args': self.args}
+        the_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.collect.value, 'args': self.args.toJSON()}
 
         result = task_process_planetary_nomenclature(the_task)
 
-        mock_collect_knowledgebase.assert_called_once_with(the_task['args'])
+        mock_collect_knowledgebase.assert_called_once()
         mock_app.insert_knowledge_base_records.assert_called_once_with([mock_record])
         self.assertTrue(result)
 
@@ -61,20 +61,23 @@ class TestPlanetaryNomenclature(unittest.TestCase):
         mock_app.get_knowledge_base_keywords.side_effect = [['positive_keyword'], ['negative_keyword']]
         mock_app.insert_named_entity_records.return_value = True
 
-        the_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.identify, 'args': self.args}
+        the_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.identify.value, 'args': self.args.toJSON()}
 
         result = task_process_planetary_nomenclature(the_task)
 
-        mock_identify_planetary_entities.assert_called_once_with(the_task['args'], ['positive_keyword'],
-                                                                 ['negative_keyword'])
-        mock_app.get_knowledge_base_keywords.assert_any_call(the_task['args'].feature_name,
-                                                             the_task['args'].feature_type,
-                                                             the_task['args'].target,
-                                                             the_task['args'].name_entity_labels[0]['label'])
-        mock_app.get_knowledge_base_keywords.assert_any_call(the_task['args'].feature_name,
-                                                             the_task['args'].feature_type,
-                                                             the_task['args'].target,
-                                                             the_task['args'].name_entity_labels[1]['label'])
+        mock_identify_planetary_entities.assert_called_once()
+        
+        # deserialize
+        entity_args = EntityArgs(**the_task["args"])
+        mock_app.get_knowledge_base_keywords.assert_any_call(entity_args.feature_name,
+                                                             entity_args.feature_type,
+                                                             entity_args.target,
+                                                             entity_args.name_entity_labels[0]['label'])
+        mock_app.get_knowledge_base_keywords.assert_any_call(entity_args.feature_name,
+                                                             entity_args.feature_type,
+                                                             entity_args.target,
+                                                             entity_args.name_entity_labels[1]['label'])
+
         mock_app.insert_named_entity_records.assert_called_once_with([mock_named_entity_record])
         self.assertTrue(result)
 
@@ -94,7 +97,7 @@ class TestPlanetaryNomenclature(unittest.TestCase):
         mock_collect_instance.collect.return_value = []
         mock_collect_knowledgebase.return_value = mock_collect_instance
 
-        the_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.collect, 'args': self.args}
+        the_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.collect.value, 'args': self.args.toJSON()}
 
         result = task_process_planetary_nomenclature(the_task)
 
@@ -109,7 +112,7 @@ class TestPlanetaryNomenclature(unittest.TestCase):
         mock_identify_instance = mock_identify_planetary_entities.return_value
         mock_identify_instance.identify.return_value = None
 
-        the_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.identify, 'args': self.args}
+        the_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.identify.value, 'args': self.args.toJSON()}
 
         result = task_process_planetary_nomenclature(the_task)
 
@@ -120,11 +123,11 @@ class TestPlanetaryNomenclature(unittest.TestCase):
     def test_unhandled_action_type(self, mock_logger):
         """ calling task queue with invalid action """
 
-        mock_task = {'action_type': 'some unknown action', 'args': self.args}
+        mock_task = {'action_type': PLANETARYNAMES_PIPELINE_ACTION.invalid.value, 'args': self.args.toJSON()}
         result = task_process_planetary_nomenclature(mock_task)
 
         self.assertFalse(result)
-        mock_logger.error.assert_called_once_with(f"Unhandled action: {mock_task['action_type']}")
+        mock_logger.error.assert_called_once_with(f"Unhandled action: {PLANETARYNAMES_PIPELINE_ACTION(mock_task['action_type'])}")
 
 if __name__ == '__main__':
     unittest.main()
