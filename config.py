@@ -22,7 +22,7 @@ LOGGING_LEVEL = 'DEBUG'
 
 
 # celery config
-CELERY_INCLUDE = ['adsrefpipe.tasks']
+CELERY_INCLUDE = ['adsplanetnamepipe.tasks']
 CELERY_BROKER = 'pyamqp://'
 
 
