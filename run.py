@@ -1,10 +1,7 @@
 import sys
 import os
-import csv
-import re
-from typing import List, Tuple, Dict
+from typing import List, Tuple
 from datetime import datetime, timedelta
-from collections import Counter
 
 from adsputils import setup_logging, load_config
 
@@ -13,6 +10,7 @@ import argparse
 from adsplanetnamepipe import tasks
 from adsplanetnamepipe.models import NamedEntityLabel
 from adsplanetnamepipe.utils.common import PLANETARYNAMES_PIPELINE_ACTION, EntityArgs
+from adsplanetnamepipe.utils.file_io import FileIO
 
 proj_home = os.path.realpath(os.path.dirname(__file__))
 config = load_config(proj_home=proj_home)
@@ -47,93 +45,6 @@ def get_default_filename(action_type: str) -> str:
     elif action_type == PLANETARYNAMES_PIPELINE_ACTION.retrieve_identified_entities:
         return f"./identified_entities_{timestamp}.csv"
     return ''
-
-
-def output_identified_entities(output_file: str, identified_entities: List[Tuple[str, str, str, str, int, float, str]]) -> bool:
-    """
-    writes identified entities to a CSV file
-
-    :param output_file: str, the file path to write the CSV
-    :param identified_entities: list of tuples, each containing:
-                                - bibcode: str, the bibcode of the entity
-                                - target: str, the target entity
-                                - feature_type: str, the feature type entity
-                                - feature_name: str, the feature name entity
-                                - feature_id: int, the feature ID from the database
-                                - confidence_score: float, the confidence score
-                                - date: str, the date in 'YYYY-MM-DD HH:MM:SS' format
-    :return: bool, True if the file was written successfully, False otherwise
-    """
-    try:
-        # Count the number of instances for each unique combination of bibcode, and feature ID
-        counts = Counter((row[0], row[4]) for row in identified_entities)
-
-        # Prepare the data for writing to the CSV
-        aggregated_data = [
-            {
-                'bibcode': bibcode,
-                'feature_id': feature_id,
-                'feature_name': next(row[3] for row in identified_entities if row[0] == bibcode and row[4] == feature_id),
-                'feature_type': next(row[2] for row in identified_entities if row[0] == bibcode and row[4] == feature_id),
-                'target': next(row[1] for row in identified_entities if row[0] == bibcode and row[4] == feature_id),
-                'num_instances': count
-            }
-            for (bibcode, feature_id), count in counts.items()
-        ]
-
-        file_exists = os.path.isfile(output_file)
-        with open(output_file, mode='a', newline='', encoding='utf-8') as csvfile:
-            writer = csv.writer(csvfile)
-
-            # write the header only if the file is new
-            if not file_exists:
-                writer.writerow(['Feature ID', 'Feature Name', 'Feature Type', 'Target', 'Bibcode', 'Number of Instances'])
-
-            # Write each identified entity to the file
-            for entity in aggregated_data:
-                writer.writerow([
-                    entity['feature_id'],
-                    entity['feature_name'],
-                    entity['feature_type'],
-                    entity['target'],
-                    entity['bibcode'],
-                    entity['num_instances']
-                ])
-            return True
-
-    except Exception as e:
-        logger.error(f"Failed to write identified entities to '{output_file}': {e}")
-        return False
-
-
-def output_knowledge_graph_keywords(output_file: str, feature_name: str, feature_type: str, target: str, label: str, keywords: List[str]) -> bool:
-    """
-    writes the keywords to a CSV file, appending to the file if it already exists
-
-    :param output_file: str, the file path to write the CSV
-    :param feature_name: str, the feature name entity
-    :param feature_type: the feature type entity
-    :param target: str, the target entity
-    :param label: str, named entity label (e.g., planetary, unknown)
-    :param keywords: list of keywords to write to the file
-    :return: bool, True if writing is successful, False otherwise
-    """
-    try:
-        file_exists = os.path.isfile(output_file)
-        with open(output_file, mode='a', newline='', encoding='utf-8') as csvfile:
-            writer = csv.writer(csvfile)
-
-            # write the header only if the file is new
-            if not file_exists:
-                writer.writerow(['Feature Name', 'Feature Type', 'Target', 'Label', 'Keywords'])
-
-            for keyword in keywords:
-                writer.writerow([feature_name, feature_type, target, label, keyword])
-
-        return True
-    except Exception as e:
-        logger.error(f"Failed to write keywords to CSV: {str(e)}")
-        return False
 
 
 def process_a_feature_name(feature_name: str, target: str, feature_type: str, action_type: str,
@@ -211,50 +122,13 @@ def process_a_feature_name(feature_name: str, target: str, feature_type: str, ac
                                                    target_entity=target,
                                                    named_entity_label=named_entity_label)
         if keywords:
-            if output_knowledge_graph_keywords(output_file, feature_name, feature_type, target, named_entity_label, keywords):
+            if FileIO.output_knowledge_graph_keywords(output_file, feature_name, feature_type, target, named_entity_label, keywords):
                 logger.info(f"Added {len(keywords)} keywords for feature name '{feature_name}', feature type '{feature_type}', target '{target}', and label '{named_entity_label}' to '{output_file}'.")
             else:
                 logger.error(f"Failed to add {len(keywords)} keywords for feature name '{feature_name}', feature type '{feature_type}', target '{target}', and label '{named_entity_label}' to '{output_file}'.")
         else:
             logger.info(
                 f"No keywords to add for feature name '{feature_name}', feature type '{feature_type}', target '{target}', and label '{named_entity_label}'.")
-
-
-def read_updated_usgs_gazetteer(csv_file_path: str) -> List[Dict[str, str]]:
-    """
-    reads the updated usgs entities
-    containing five columns: Feature_ID,Clean_Feature_Name,Target,Feature_Type,Approval_Date,Approval_Status
-
-    :param csv_file_path: path to the CSV file.
-    :return: list of dictionaries, each containing data from one row.
-    """
-    year_pattern = re.compile(r'\b\d{4}\b')
-    data = []
-    try:
-        with open(csv_file_path, newline='', encoding='utf-8-sig') as csvfile:
-            reader = csv.DictReader(csvfile)
-            # there are lots of white space in the header line coming from the Planetary Name website
-            # Feature ID	Clean          Feature Name	Target	Feature Type	Approval          Status	Approval Date
-            # skip their header
-            old_header = next(reader)
-            # to use these as column headers
-            new_header = ['entity_id', 'feature_name', 'target', 'feature_type', 'approval_status', 'approval_date']
-            for row in reader:
-                # transform keys first
-                row = {new_key: row[old_key] for new_key, old_key in zip(new_header, old_header)}
-                # now process the row
-                if row['approval_status'].lower() == 'approved':
-                    # extract year from `approval_date`
-                    match = year_pattern.search(row['approval_date'])
-                    row['approval_date'] = match.group(0) if match else row['approval_date']
-                    # split `feature_type` to have separate singular and plural (if any)
-                    row['feature_type'], row['feature_type_plural'] = [x.strip() for x in (row['feature_type'].split(',') + [''])[:2]]
-                    data.append(row)
-    except FileNotFoundError:
-        logger.error(f"File not found: {csv_file_path}. Please check the path and try again.")
-    except Exception as e:
-        logger.error(f"An error occurred while reading the file: {e}")
-    return data
 
 
 def import_usgs_update(usgs_update_file: str):
@@ -264,7 +138,7 @@ def import_usgs_update(usgs_update_file: str):
 
     :param usgs_update_file: str, path to the USGS update CSV file
     """
-    data = read_updated_usgs_gazetteer(usgs_update_file)
+    data = FileIO.load_usgs_entities(usgs_update_file)
     if data:
         entity_id = {int(row['entity_id']) for row in data}
         entity_ids = set(app.get_entity_ids())
@@ -396,7 +270,7 @@ if __name__ == '__main__':
 
             if results:
                 output_file = args.output_file if args.output_file else get_default_filename(action_type)
-                if output_identified_entities(output_file, results):
+                if FileIO.output_identified_entities(output_file, results):
                     logger.info(f"Added {len(results)} identified entities for feature name '{feature_name}', feature type '{current_feature_type}', target '{current_target}' to '{output_file}'.")
                 else:
                     logger.error(f"Failed to add {len(results)} identified entities for feature name '{feature_name}', feature type '{current_feature_type}', target '{current_target}' to '{output_file}'.")

@@ -133,7 +133,7 @@ class SearchRetrieval():
 
         :return: list of document dictionaries
         """
-        query = f'full:(="{self.args.feature_name}") full:("{self.args.target}") full:("{self.feature_types_ored}")'
+        query = f'full:(="{self.args.feature_name}") full:("{self.args.target}") full:("{self.feature_types_ored}") '
         query += f'{self.astronomy_journal_filter} {self.other_usgs_filters} {self.date_time_filter}'
         return self.solr_query(query)
 

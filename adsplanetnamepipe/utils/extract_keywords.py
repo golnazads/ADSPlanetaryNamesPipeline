@@ -392,7 +392,8 @@ class NASAWrapper():
             else:
                 logger.error(f"From Nasa Concept status code {response.status_code}")
         except RequestException as e:
-            logger.info('Not hosted by ADS.')
+            # logger.info('Not hosted by ADS.')
+            pass
         return []
 
 

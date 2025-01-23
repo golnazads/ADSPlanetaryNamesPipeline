@@ -129,5 +129,41 @@ class TestPlanetaryNomenclature(unittest.TestCase):
         self.assertFalse(result)
         mock_logger.error.assert_called_once_with(f"Unhandled action: {PLANETARYNAMES_PIPELINE_ACTION(mock_task['action_type'])}")
 
+    def test_entity_args_serialization_deserialization(self):
+        """ test serialization and deserialization of EntityArgs """
+
+        # serialize
+        serialized_data = self.args.toJSON()
+
+        # expected serialized data
+        expected_serialized_data = {
+            "target": "Mars",
+            "feature_type": "Crater",
+            "feature_type_plural": "Craters",
+            "feature_name": "Rayleigh",
+            "context_ambiguous_feature_names": ["asteroid", "main belt asteroid", "Moon", "Mars"],
+            "multi_token_containing_feature_names": ["Rayleigh A", "Rayleigh B", "Rayleigh C", "Rayleigh D"],
+            "name_entity_labels": [{'label': 'planetary', 'value': 1}, {'label': 'non planetary', 'value': 0}],
+            "timestamp": "2000-01-01",
+            "all_targets": ["Mars", "Mercury", "Moon", "Venus"]
+        }
+
+        self.assertEqual(serialized_data, expected_serialized_data)
+
+        # deserialize
+        deserialized_args = EntityArgs(**serialized_data)
+
+        # assert that deserialized object matches the original instance
+        self.assertEqual(deserialized_args.target, self.args.target)
+        self.assertEqual(deserialized_args.feature_type, self.args.feature_type)
+        self.assertEqual(deserialized_args.feature_type_plural, self.args.feature_type_plural)
+        self.assertEqual(deserialized_args.feature_name, self.args.feature_name)
+        self.assertEqual(deserialized_args.context_ambiguous_feature_names, self.args.context_ambiguous_feature_names)
+        self.assertEqual(deserialized_args.multi_token_containing_feature_names, self.args.multi_token_containing_feature_names)
+        self.assertEqual(deserialized_args.name_entity_labels, self.args.name_entity_labels)
+        self.assertEqual(deserialized_args.timestamp, self.args.timestamp)
+        self.assertEqual(deserialized_args.all_targets, self.args.all_targets)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -80,7 +80,7 @@ class EntityArgs():
         self.timestamp = timestamp
         self.all_targets = all_targets
 
-    def toJSON(self):
+    def toJSON(self) -> dict:
         """
         convert the EntityArgs instance to a JSON-compatible dictionary
 
