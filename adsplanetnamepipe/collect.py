@@ -89,7 +89,7 @@ class CollectKnowldegeBase():
             )
             for i, doc in enumerate(docs):
                 # for each doc temp list of KnowledgeBase records and the corresponding llm scores
-                # return the collected data only if the it passes the two scores (llm and paper)
+                # return the collected data only if it passes the two scores (llm and paper)
                 collected_doc: List[KnowledgeBase] = []
                 local_llm_scores_doc = []
 
@@ -117,11 +117,10 @@ class CollectKnowldegeBase():
                         excerpt_keywords = self.extract_keywords.forward(excerpt, num_keywords=10)
                         if excerpt_keywords:
                             special_keywords = self.extract_keywords.forward_special(excerpt)
-                            # include it if least one STI-keyword was selected
-                            # TODO: once nasa package is installed changed replace >= to >
-                            if len(special_keywords) >= 0:
+                            # include this excerpt only if there are any STI-keywords identified
+                            if special_keywords:
                                 collected_doc.append(KnowledgeBase(
-                                    history_id=None,  # Set to None for now, will be updated later
+                                    history_id=None,  # set to None for now, will be updated downstream
                                     bibcode=doc['bibcode'],
                                     database=doc['database'],
                                     excerpt=excerpt,
