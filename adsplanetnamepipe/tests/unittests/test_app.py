@@ -606,10 +606,8 @@ class TesADSPlanetaryNamesPipelineCelery(unittest.TestCase):
 
         feature_name_info = self.app.get_all_feature_name_info()
         self.assertTrue(len(feature_name_info) == 2090)
-        print(f"First record: {feature_name_info[0]}")
-        print(f"Last record: {feature_name_info[-1]}")
         self.assertTrue(feature_name_info[0] == ('Venus', 'Dorsum', 'Abe Mango Dorsa'))
-        self.assertTrue(feature_name_info[-1] == ('Venus', 'Crater', 'von Suttner'))
+        self.assertTrue(feature_name_info[-1] == ('Venus', 'Corona', 'Zywie Corona'))
 
     def test_get_entities_for_knowledge_graph_update(self):
         """ test get_entities_for_knowledge_graph_update """

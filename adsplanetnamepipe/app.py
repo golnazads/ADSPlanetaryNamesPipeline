@@ -65,7 +65,8 @@ class ADSPlanetaryNamesPipelineCelery(ADSCelery):
         :return: a list of tuples containing (feature_name_entity, feature_type_entity, target_entity)
         """
         with self.session_scope() as session:
-            rows = session.query(FeatureName).order_by(FeatureName.entity.asc(),
+            # different sorting is done locally vs upstream so make sure feature name entity is treated case-insensitive
+            rows = session.query(FeatureName).order_by(func.upper(FeatureName.entity).asc(),
                                                        FeatureName.target_entity.asc(),
                                                        FeatureName.feature_type_entity.asc()).all()
             if rows:
